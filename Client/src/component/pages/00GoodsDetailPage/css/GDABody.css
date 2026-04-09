@@ -1,0 +1,155 @@
+.GDAbout {
+  display: flex;
+  margin: 4vh 15vw 0 15vw;
+  flex-direction: row;
+  /*border: 2px solid black;*/
+}
+
+.GDAPic {
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  width: 40%;
+  /*border: 2px solid black;*/
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.GoodPic {
+  height: 20vw;
+  width: auto;
+  max-height: 60%;
+  object-position: center;
+}
+
+.GoodPicPreview {
+  display: flex;
+  align-items: center;
+  gap: 2;
+  overflow-x: auto;
+  max-width: xs;
+  margin-top: 2vh;
+}
+
+.GoodPicPreviewImage {
+  height: 5vw;
+  width: auto;
+  border-radius: 0.5vw;
+  cursor: pointer;
+  /*scale: 10;*/
+}
+
+.GDAText {
+  display: flex;
+  flex-direction: column;
+  width: 60%;
+  /*border: 0.2vh solid black;*/
+}
+
+.GDAContent {
+  display: flex;
+  margin-top: 0.92vh;
+  height: auto;
+}
+
+.GDABrand {
+  font-size: 1vw;
+}
+
+.GDAName {
+  font-size: 1.5vw;
+  font-weight: bold;
+}
+
+.GDAPrice {
+  margin-top: 0.8vw;
+}
+
+.GDAOriginalPrice {
+  color: #888;
+  font-size: 1.5vw;
+  text-decoration: line-through;
+  margin-right: 0.5vw;
+}
+
+.GDADiscount {
+  color: #e53935;
+  font-weight: bold;
+  font-size: 1.2vw;
+}
+
+.GDARate {
+  /*display: flex;
+    flex-direction: row;
+    align-items: center;*/
+}
+
+.GDAStar {
+  width: 3vw;
+  height: auto;
+}
+
+.GDAScore {
+  margin-top: 0.6vw;
+  color: #fbc02d;
+  font-size: 1.2vw;
+  /*margin-left: 1vw;*/
+}
+
+.GDAButton {
+  display: flex;
+}
+
+.GDAAddLike {
+  padding: 0.8vw 1.3vw;
+  background-color: #ed8a8a;
+  border: none;
+  color: white;
+  font-weight: bold;
+  font-size: 1.25vw;
+  line-height: 1.25vw;
+  border-radius: 0.5vw;
+  margin-top: 1vw;
+  margin-right: 1vw;
+  transition: color 0.2s ease-in-out;
+}
+.slick-prev, .slick-next{
+  background: #ed8a8a;
+}
+
+.GDAPriceHistory {
+  padding: 0.8vw 1.3vw;
+  background-color: #ed8a8a;
+  border: none;
+  color: white;
+  font-weight: bold;
+  font-size: 1.25vw;
+  line-height: 1.25vw;
+  border-radius: 0.5vw;
+  margin-top: 1vw;
+  margin-right: auto;
+  transition: color 0.2s ease-in-out;
+}
+
+.GDAAddLike:hover {
+  color: rgb(84, 49, 49);
+}
+
+.GoodPicPreviewLeftBut {
+  background-color: transparent;
+  border-width: 0;
+  font-size: 1.75vw;
+  color: #999;
+}
+
+button:disabled {
+  color: #c9c9c9;
+}
+
+.GoodPicPreviewRightBut {
+  background-color: transparent;
+  border-width: 0;
+  font-size: 1.75vw;
+  color: #999;
+}
+

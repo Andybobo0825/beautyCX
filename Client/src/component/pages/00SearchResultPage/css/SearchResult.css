@@ -1,0 +1,222 @@
+.SRLink {
+    text-decoration: none;
+    color: #000;
+}
+
+.SRLink a{
+    text-decoration: none;
+}
+
+p {
+    font-size: 1.5vw;
+ }
+
+.SearchResult {
+    display: flex;
+    flex-direction: column;
+}
+
+.SRFilter {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.SRFilterText{
+    font-size: 1.5vw;
+    line-height: 1.5vw;
+    font-weight: bold; 
+}
+
+.css-3be1l6 {
+    height: '2.5vw';
+}
+
+.css-1xc3v61-indicatorContainer {
+    padding: 0  !important;
+}
+
+.SRFilterRange {
+    display: flex;
+    align-items: center;
+}
+
+.SRFilterRangeText, .SRFilterComment{
+    font-size: 1.5vw;
+    line-height: 1.5vw;
+    font-weight: bold; 
+}
+
+.SRFilterRangeMin {
+    display: flex;
+    margin-left: -2.5vw;
+    margin-right: -3vw;
+    max-width: 20vw
+}
+
+.SRFilterRangeMax {
+    display: flex;
+    margin-left: -3vw;
+    margin-right: -2.5vw;
+    /* margin-top: 0.5vh; */
+    max-width: 20vw
+}
+
+.SRFilterRangeMin input{
+    width: 50%;
+    border-radius: 0.5vw;
+    font-size: 1.25vw;
+    line-height: 1.25vw;    
+    height: 2.5vw;
+    font-weight: normal;
+    margin: 0 auto;
+    border: none;
+    color: #000;
+    padding: 1vw 1.3vw;
+    border: #ED8A8A 0.15vw solid;
+}
+
+.SRFilterRangeMin input:focus{
+    border: #ED8A8A 0.15vw solid;
+}
+
+.SRFilterRangeMax input{
+    width: 50%;
+    border-radius: 0.5vw;
+    font-size: 1.25vw;
+    line-height: 1.25vw;    
+    height: 2.5vw;
+    font-weight: normal;
+    margin: 0 auto;
+    border: none;
+    color: #000;
+    padding: 1vw 1.3vw;
+    border: #ED8A8A 0.15vw solid;
+}
+
+.SRFilterRangeMax input:focus{
+    border: #ED8A8A 0.15vw solid;
+}
+
+.SRFilterRangeConfirmButtom{
+    display: flex;
+    background-color: #ED8A8A;
+    border: none;
+    font-weight: bold;
+    font-size: 1.25vw;
+    color: white;
+    padding: 0.3vw 0.8vw;
+    align-content: flex-start;
+    border-radius: 0.5vw;
+    transition: color 0.2s ease-in-out; 
+    /* margin-top: 0.5vh; */
+}
+
+.SRFilterRangeConfirmButtom:hover{
+    color: rgb(84, 49, 49);
+}
+
+img {
+    width: 10vw;
+}
+
+.SRDisplay {
+    display: flex;
+    flex-direction: row;
+    margin-left: 15%;
+    margin-right: 15%;
+    margin-top: 4vh;
+    margin-bottom: 2vh;
+    border: 0.15vw solid #ED8A8A;
+}
+
+.SRDisplayProduct {
+    margin-left: 2vw;
+}
+
+.SRDProBrand {
+    font-size: 0.9vw;
+    margin-top: 1.5vh;
+}
+
+.SRDProName {
+    font-size: 1.25vw;
+    font-weight: bold;
+}
+
+.SRDProPrice {
+    margin-top: 0.8vw;
+}
+
+.SRDProOriPrice {
+    color: #888;
+    font-size: 1.5vw;
+    text-decoration: line-through;
+    margin-right: 0.5vw;
+}
+
+.SRDProDiscount {
+    color: #e53935;
+    font-weight: bold;
+    font-size: 1.2vw;
+}
+
+.SRDProRate {
+    align-items: center;
+}
+
+.SRDProRScore {
+    font-size: 0.92vw;
+    color: #fbc02d;
+    margin-top: 0.6vw;
+    /*margin-left: 1vw;*/
+}
+
+.SearchResult-error {
+  color: #b00020;
+  font-size: 1.5vw;
+  text-align: center;
+  margin: 5vh auto;
+  min-height: 30vh;           /* 讓它佔據較高空間 */
+  display: flex;
+  align-items: center;        /* 垂直置中 */
+  justify-content: center;    /* 水平置中 */
+  background-color: #ffe5e5;  /* 可選的紅底提示色 */
+  border-radius: 1vw;
+  width: 80%;
+  max-width: 800px;
+  padding: 2vh 2vw;
+}
+
+.SearchResult-loading {
+  color: #b00020;
+  font-size: 1.5vw;
+  text-align: center;
+  margin: 5vh auto;
+  min-height: 30vh;           /* 讓它佔據較高空間 */
+  display: flex;
+  align-items: center;        /* 垂直置中 */
+  justify-content: center;    /* 水平置中 */
+  background-color: #ffe5e5;  /* 可選的紅底提示色 */
+  border-radius: 1vw;
+  width: 80%;
+  max-width: 800px;
+  padding: 2vh 2vw;
+}
+
+.no-results-message{
+  color: #b00020;
+  font-size: 1.5vw;
+  text-align: center;
+  margin: 5vh auto;
+  min-height: 30vh;           /* 讓它佔據較高空間 */
+  display: flex;
+  align-items: center;        /* 垂直置中 */
+  justify-content: center;    /* 水平置中 */
+  background-color: #ffe5e5;  /* 可選的紅底提示色 */
+  border-radius: 1vw;
+  width: 80%;
+  max-width: 800px;
+  padding: 2vh 2vw;
+}

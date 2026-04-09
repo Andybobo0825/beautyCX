@@ -1,0 +1,43 @@
+.AboutUsBody{
+    margin: 4vh 15vw 0 15vw;  
+    
+}
+
+.AUBTitle{
+    font-size: 1.6vw;
+    line-height: 1.6vw;
+    font-weight: bold;
+    color: rgb(237, 138, 138)
+}
+
+.AUBLine{
+    margin: 0.8vw 0;
+    height: 0.1vw;
+    background: #676767;
+    background-image: linear-gradient(to right, #676767, #676767, #676767);
+}
+
+.AUBBox{
+    display: flex;
+    flex-direction:column ;
+    border: solid rgb(192, 192, 192) 0.1vw;
+    padding: 1vw 0 2vw 0;
+}
+
+.AUBContent{
+    width: 70%;
+    font-size: 1.1vw;
+    line-height: 2vw;
+    font-weight: bold;
+    margin: 0 auto 0 auto;
+    
+}
+
+.AUBLogo{
+    text-align: center
+}
+
+.AUBLogo img{
+    width: 70%;
+    /* margin: 0 auto; */
+}
