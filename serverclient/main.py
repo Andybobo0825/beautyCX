@@ -23,7 +23,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_for_testing')
 
 # 設定 SQLAlchemy 連線
-app.config['SQLALCHEMY_ECHO'] = True
+app.config['SQLALCHEMY_ECHO'] = os.environ.get('SQLALCHEMY_ECHO', 'false').lower() == 'true'
 app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -88,7 +88,10 @@ if __name__ == "__main__":
     atexit.register(shutdown_background_sync)
     
     try:
-        app.run(debug=True, host="0.0.0.0", port=5001)
+        app.run(
+            debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true",
+            host="0.0.0.0",
+            port=int(os.environ.get("PORT", "5001"))
+        )
     finally:
         shutdown_background_sync()
-

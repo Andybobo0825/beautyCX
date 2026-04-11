@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 import re
 import random
 import string
@@ -13,7 +14,10 @@ from werkzeug.security import generate_password_hash
 register_bp = Blueprint('register', __name__, url_prefix="/registerpage")
 
 # API Gateway 設定
-API_GATEWAY_URL = "https://gkxauctzzl.execute-api.ap-east-2.amazonaws.com/ap-east/ProjectEmail"
+API_GATEWAY_URL = os.environ.get(
+    "API_GATEWAY_URL",
+    "https://gkxauctzzl.execute-api.ap-east-2.amazonaws.com/ap-east/ProjectEmail"
+)
 ENABLE_EMAIL = True  # 設為 False 可暫時關閉郵件功能
 
 # --- 輔助函數 (驗證、產生ID) ---
@@ -160,4 +164,3 @@ def register():
         return jsonify({"message": f"註冊過程中發生錯誤: {e}"}), 500
 
     # 移除 finally 區塊，SQLAlchemy 會管理 Session
-

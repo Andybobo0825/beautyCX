@@ -120,3 +120,15 @@ desktop.ini
 .aws-sam/
 .lambda/
 DOCUMENT/Binary
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+*.zip
+
+# Deploy runtime files
+deploy/backend.env
+deploy/frontend-build/

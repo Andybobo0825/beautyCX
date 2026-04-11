@@ -2,24 +2,15 @@
 
 這份專案是我的大學期末專題作品，主題是「美妝商品比價與會員收藏平台」。
 
-這份 README 以作品集展示為目的撰寫，重點放在我負責的 `後端開發` 與 `雲端架構設計`。前端介面為團隊共同成果，本文件僅保留必要背景，讓 HR 或技術主管可以快速理解我的實作價值。
+這份 README 以作品集展示為目的撰寫，重點放在我負責的 `後端開發` 與 `雲端架構設計`。
 
-## HR 快速摘要
+## 快速摘要
 
 - 專案類型：大學期末團隊專題
 - 我的角色：後端工程 + 雲端設計
 - 核心目標：整合多通路美妝商品資料，提供搜尋、比價、價格歷史、會員登入、收藏追蹤與商品圖片服務
 - 後端亮點：JWT 驗證、Redis 快取與回寫、SQL Server 資料模型、S3 + CloudFront 圖片交付、註冊通知串接 API Gateway
 - 技術棧：Flask、SQLAlchemy、SQL Server、Redis、AWS S3、CloudFront、API Gateway、React
-
-## 面試 1 分鐘速讀版
-
-- 我負責這個美妝比價平台的後端 API 與雲端設計，主軸是「把商品、價格、會員、圖片服務整合成可運作的系統」
-- 後端以 `Flask + SQLAlchemy + SQL Server` 建立商品列表、搜尋、商品明細、價格歷史、評論、收藏與會員系統
-- 我設計 `JWT + refresh token + Redis blacklist` 的登入驗證流程，處理登入狀態與登出失效
-- 我用 `Redis + SQL Server` 設計熱門商品點擊數快取與回寫機制，降低高頻更新直接打資料庫的成本
-- 我把商品圖片從資料庫二進位欄位遷移到 `S3`，並透過 `CloudFront` 與簽名 URL 設計圖片交付方式
-- 我也把註冊通知流程拆到 `API Gateway + Lambda + SES`，代表我不只寫 API，也有基礎雲端分層與服務整合能力
 
 ## 專案背景
 
@@ -119,13 +110,12 @@
 
 ### 依架構圖整理的雲端流程
 
-我另外對照了 `DOCUMENT/AWS 架構.png` 與 `DOCUMENT/CDN架構.png`，可以更具體整理出這個專案的雲端設計思路：
+我另外對照了 `DOCUMENT/aws-architecture.png` 與 `DOCUMENT/CDN架構.png`，可以更具體整理出這個專案的雲端設計思路：
 
-- 對外流量先經過 `Route 53`，再進入 `ELB`
-- Web Server 佈在 `Public Subnet`，並用 `Auto Scaling Group` 管理擴展
-- 資料庫與後端管理服務放在 `Private Subnet`，降低直接暴露風險
-- `NAT Gateway` 負責讓內部服務可安全對外連線
-- `S3` 除了可承接靜態檔，也在架構圖中被規劃為 server log 儲存位置
+- 對外流量會直接進入 `Public Subnet` 中的應用服務入口
+- 應用服務以一台 `EC2` 佈在 `Public Subnet`，承接 Flask API 與背景排程
+- `Redis` 與 `RDS SQL Server` 放在 `Private Subnet`，降低核心資料直接暴露風險
+- 商品圖片由 `S3 + CloudFront` 提供交付與快取
 - 註冊通知信流程走 `API Gateway -> Lambda -> SES -> User`
 
 ### 圖片 CDN 實際流程
@@ -189,7 +179,7 @@
 
 從架構圖可以看出，我在專題中已經開始用雲端部署的基本分層來思考：
 
-- DNS 與入口流量用 `Route 53 + ELB`
+- 以公開入口與應用層分離的方式整理外部流量
 - 應用層與資料層分開，避免資料庫直接對外
 - 以 `Public Subnet / Private Subnet` 做角色分離
 - 以 `API Gateway + Lambda + SES` 把通知信功能拆成獨立流程
@@ -254,9 +244,57 @@ beautyCX/
 
 AWS 與 CDN 架構圖放在 `DOCUMENT/`：
 
-![AWS 架構](DOCUMENT/AWS架構.png)
+![AWS 架構](./DOCUMENT/aws-architecture.png)
 
-![CDN 架構](DOCUMENT/CDN架構.png)
+![CDN 架構](./DOCUMENT/CDN架構.png)
+
+## Terraform 流程
+
+我另外補了一套對應目前雲架構的 Terraform 樣板，放在 `infra/terraform/`，涵蓋：
+
+- `VPC / Public Subnet / Private Subnet`
+- `EC2`
+- `RDS SQL Server`
+- `ElastiCache Redis`
+- `S3 + CloudFront`
+- `API Gateway + Lambda + SES`
+
+快速使用方式：
+
+```bash
+cd infra/terraform
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan
+```
+
+敏感資訊像 `aws_access_key_id`、`aws_secret_access_key` 與資料庫帳密都保留空白，需自行填入 `terraform.tfvars` 或改用環境變數。
+
+## CI/CD 流程
+
+我另外補了第一版 CI/CD，核心策略是：
+
+- 後端先 Docker 化，由 GitHub Actions 建 image
+- 前端先產生 `build artifact`
+- 正式部署先放在單台 `EC2`
+- EC2 上以 `docker compose` 跑後端 container 與 nginx
+
+對應檔案：
+
+- `.github/workflows/ci.yml`
+- `.github/workflows/deploy.yml`
+- `serverclient/Dockerfile`
+- `deploy/docker-compose.prod.yml`
+- `deploy/nginx/default.conf`
+- `deploy/README.md`
+
+其中 deploy workflow 會做三件事：
+
+1. build React 前端靜態檔
+2. build 並 push 後端 Docker image 到 `GHCR`
+3. 透過 SSH 把前端 artifact 與 compose 設定送到 EC2，再執行 `docker compose up -d`
+
+EC2 端不需要先上 ECS，現階段只要有 Docker 與 Docker Compose plugin 即可。GitHub Secrets 清單整理在 `deploy/README.md`。
 
 ## 如何啟動專案
 
@@ -299,11 +337,7 @@ npm start
 - `S3_BUCKET_NAME`
 - `CLOUDFRONT_DOMAIN`
 
-補充：目前程式碼中部分設定仍保留本機開發預設值，因此若要正式部署，我會再把所有敏感資訊統一移到 `.env` 或雲端 Secret Manager。
-
 ## 我希望 HR 看見的能力
-
-這個專案最能代表我的，不只是把 API 寫出來，而是我已經開始用「工程系統」的角度思考：
 
 - 我會把功能拆模組，而不是把所有邏輯塞進單一檔案
 - 我會考慮快取、資料一致性與失敗 fallback，而不是只追求功能能跑
