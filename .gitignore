@@ -1,134 +1,21 @@
-# ==========================
-# 📦 Node.js
-# ==========================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-package-lock.json
-.pnpm-debug.log
-
-# Build / Dist files
-dist/
-build/
-
-# Env files
-.env
-.env.local
-.env.*.local
-
-# Next.js / Nuxt / Vite 等前端暫存
-.next/
-.nuxt/
-.vite/
-out/
-.cache/
-coverage/
-
-# ==========================
-# 🐍 Python
-# ==========================
-# Byte-compiled / optimized files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Distribution / packaging
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# PyInstaller
-*.manifest
-*.spec
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Virtual environments
-.venv/
-venv/
-ENV/
-env/
-env.bak/
-
-# Flask instance folder
-instance/
-
-# ==========================
-# 🐳 Docker
-# ==========================
-# Docker build files
-**/Dockerfile*
-**/docker-compose*.yml
-.dockerignore
-
-# Docker temporary / build folders
-tmp/
-*.pid
-*.seed
-
-# Image build cache
-build/
-cache/
-__docker_cache__/
-
-# ==========================
-# 🧰 IDE / 系統檔
-# ==========================
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-
-# OS generated files
 .DS_Store
-Thumbs.db
-ehthumbs.db
-desktop.ini
-
-# ==========================
-# 🧪 Logs / Temporary files
-# ==========================
-*.log
-*.tmp
-*.swp
-*.lock
-*.orig
-
-# ==========================
-# 🧾 Misc
-# ==========================
-# 如果你用 AWS Lambda 部署
-.aws-sam/
-.lambda/
-DOCUMENT/Binary
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+.omx/
+.git.*backup*/
+.tmp/
+DB20251219_backup
 
 # Terraform
 .terraform/
 *.tfstate
 *.tfstate.*
 *.tfvars
-!*.tfvars.example
-*.zip
-
-# Deploy runtime files
-deploy/backend.env
-deploy/frontend-build/
+crash.log
+crash.*.log

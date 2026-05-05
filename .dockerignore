@@ -1,0 +1,14 @@
+.git
+.git.broken-backup-*/
+.omx/
+.tmp/
+node_modules/
+Client/node_modules/
+serverclient/node_modules/
+coverage/
+dist/
+build/
+.env
+.env.*
+.DS_Store
+DB20251219_backup

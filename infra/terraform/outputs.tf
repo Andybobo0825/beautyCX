@@ -1,34 +1,39 @@
-output "ec2_public_ip" {
-  description = "Public IP of the EC2 application server."
-  value       = aws_instance.app.public_ip
+output "application_url" {
+  value       = "http://${aws_lb.app.dns_name}"
+  description = "Public ALB URL for the ECS service."
 }
 
-output "ec2_public_dns" {
-  description = "Public DNS of the EC2 application server."
-  value       = aws_instance.app.public_dns
+output "api_ecr_repository_url" {
+  value       = aws_ecr_repository.api.repository_url
+  description = "ECR repository URL for the API image."
 }
 
-output "cloudfront_domain_name" {
-  description = "CloudFront domain for product images."
-  value       = aws_cloudfront_distribution.product_images.domain_name
+output "web_ecr_repository_url" {
+  value       = aws_ecr_repository.web.repository_url
+  description = "ECR repository URL for the web image."
 }
 
-output "s3_bucket_name" {
-  description = "S3 bucket name for product images."
-  value       = aws_s3_bucket.product_images.bucket
+output "ecs_cluster_name" {
+  value       = aws_ecs_cluster.app.name
+  description = "ECS cluster name."
 }
 
-output "api_gateway_invoke_url" {
-  description = "Invoke URL for the register email API."
-  value       = "${aws_api_gateway_stage.email.invoke_url}/${local.api_gateway_path}"
+output "ecs_service_name" {
+  value       = aws_ecs_service.app.name
+  description = "ECS service name."
 }
 
-output "rds_endpoint" {
-  description = "SQL Server endpoint."
-  value       = aws_db_instance.sqlserver.address
+output "codebuild_project_name" {
+  value       = aws_codebuild_project.app.name
+  description = "CodeBuild project used by the pipeline."
 }
 
-output "redis_primary_endpoint" {
-  description = "Primary Redis endpoint."
-  value       = aws_elasticache_replication_group.redis.primary_endpoint_address
+output "codepipeline_name" {
+  value       = aws_codepipeline.app.name
+  description = "CodePipeline name."
+}
+
+output "artifact_bucket_name" {
+  value       = aws_s3_bucket.artifacts.bucket
+  description = "S3 artifact bucket used by CodePipeline."
 }

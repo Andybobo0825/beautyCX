@@ -1,362 +1,101 @@
-﻿# beautyCX
+# beautyCX
 
-這份專案是我的大學期末專題作品，主題是「美妝商品比價與會員收藏平台」。
+beautyCX 目前整理為以容器為核心、可透過 AWS ECS 進行 CI/CD 的 Web 專案：
 
-這份 README 以作品集展示為目的撰寫，重點放在我負責的 `後端開發` 與 `雲端架構設計`。
+- `Client/` — Vite + React 前端，正式環境由 Nginx 提供靜態檔案服務。
+- `serverclient/` — Node.js / Express API。
+- `compose.yaml` — 本機開發用 Docker Compose，包含前端與 API。
+- `buildspec.yml` — AWS CodeBuild 使用的建置、測試、推送映像檔流程。
+- `infra/terraform/` — AWS ECS Fargate、ECR、CodePipeline、CodeBuild 基礎設施。
+- `deploy/aws/` — AWS 部署操作說明。
 
-## 快速摘要
-
-- 專案類型：大學期末團隊專題
-- 我的角色：後端工程 + 雲端設計
-- 核心目標：整合多通路美妝商品資料，提供搜尋、比價、價格歷史、會員登入、收藏追蹤與商品圖片服務
-- 後端亮點：JWT 驗證、Redis 快取與回寫、SQL Server 資料模型、S3 + CloudFront 圖片交付、註冊通知串接 API Gateway
-- 技術棧：Flask、SQLAlchemy、SQL Server、Redis、AWS S3、CloudFront、API Gateway、React
-
-## 專案背景
-
-`beautyCX` 想解決的問題是：使用者在購買美妝商品時，常需要在不同通路之間反覆比價、查看價格波動、確認評論與追蹤喜歡的商品。
-
-因此這個平台整合了：
-
-- 商品列表與分類瀏覽
-- 關鍵字搜尋
-- 單一商品的多通路價格比較
-- 價格歷史查詢
-- 商品評論查詢
-- 會員註冊 / 登入 / 個人資料管理
-- 商品收藏追蹤
-- 商品圖片雲端化與 CDN 加速
-
-## 我負責的內容
-
-我在這個專案中主要負責 `serverclient/` 內的後端與雲端設計。如果用履歷專案描述的方式表達，可以整理成：
-
-- 使用 `Flask` 與 `SQLAlchemy` 建立模組化後端 API，拆分為登入、註冊、商品列表、商品明細、會員中心與圖片服務等 Blueprint
-- 設計並維護 `SQL Server` 資料模型，涵蓋商品、即時價格、價格歷史、會員、收藏、評論與商品圖片 metadata
-- 實作會員驗證機制，包含 `JWT access token`、`refresh token`、密碼雜湊儲存與 `Redis blacklist` 登出失效流程
-- 開發商品搜尋、分類瀏覽、價格查詢、價格歷史、評論讀取、收藏切換與會員資料更新等核心 API
-- 設計 `Redis + Database` 混合快取策略處理商品 `clickTimes`，以 write-back、cache-aside 與 fallback 機制降低高頻更新對資料庫的壓力
-- 規劃商品圖片雲端化流程，將圖片由資料庫 `varbinary` 遷移至 `AWS S3`，並透過 `CloudFront` 提供公開 URL 或簽名 URL
-- 串接 `API Gateway + Lambda + SES` 作為註冊通知流程，將即時通知能力從主應用服務中拆分
-- 整理 `init.sql`、`openapi.yaml`、測試腳本與架構圖，提升專案展示、交接與作品集說明的完整度
-
-## 功能總覽
-
-### 1. 商品探索
-
-- 首頁可依分類瀏覽商品
-- 可依 `clickTimes`、`price`、`review` 排序
-- 搜尋功能可用關鍵字查詢商品名稱與品牌
-
-對應程式：`serverclient/routes/HomePage.py`、`serverclient/routes/GoodPage.py`、`serverclient/routes/Frame.py`
-
-### 2. 商品明細與比價
-
-- 取得商品基本資訊
-- 顯示不同通路的即時價格
-- 查詢價格歷史，觀察價格波動
-- 顯示商品評論
-- 顯示商品主圖與所有圖片 URL
-
-對應程式：`serverclient/routes/GoodDetail.py`、`serverclient/routes/ProductPicture.py`
-
-### 3. 會員系統
-
-- 註冊帳號
-- 登入並取得 access token / refresh token
-- 驗證登入狀態
-- refresh token 換發 access token
-- 登出後將 token 加入 Redis blacklist
-- 查詢與更新會員資料
-- 修改密碼
-
-對應程式：`serverclient/routes/LoginPage.py`、`serverclient/routes/RegisterPage.py`、`serverclient/routes/ClientPage.py`、`serverclient/utils/auth.py`
-
-### 4. 收藏追蹤
-
-- 使用者可切換商品追蹤狀態
-- 可查詢自己的追蹤清單
-- 商品明細頁可回傳目前是否已收藏
-
-對應程式：`serverclient/routes/GoodDetail.py`、`serverclient/routes/ClientPage.py`
-
-### 5. 熱門度統計
-
-- 商品點擊數以 Redis 優先累加
-- 背景排程定期回寫 SQL Server
-- 首頁 / 商品列表 / 搜尋結果可讀取最新點擊數，不只依賴資料庫舊值
-
-對應程式：`serverclient/services/click_times_service.py`、`serverclient/main.py`
-
-### 6. 圖片雲端化
-
-- 商品圖片原本存放於 SQL Server `varbinary`
-- 後續遷移到 AWS S3，資料表只保留 `storage_key`、尺寸、可見性等欄位
-- API 依圖片權限產生 CloudFront URL，減少資料庫負擔並改善前端載入
-
-對應程式：`serverclient/services/s3_service.py`、`serverclient/services/migrate_sql_to_s3.py`、`serverclient/routes/ProductPicture.py`
-
-## 架構設計
-
-### 系統組成
-
-- 前端：`Client/`，使用 React 建立頁面與路由
-- 後端：`serverclient/`，使用 Flask + SQLAlchemy 提供 REST API
-- 資料庫：SQL Server，儲存商品、價格、會員、收藏、評論等核心資料
-- 快取：Redis，負責熱門商品點擊數與部分列表快取
-- 物件儲存：AWS S3，儲存商品圖片
-- CDN：AWS CloudFront，提供圖片加速與 URL 發佈
-- 雲端整合：AWS API Gateway，處理註冊通知信串接
-
-### 依架構圖整理的雲端流程
-
-我另外對照了 `DOCUMENT/aws-architecture.png` 與 `DOCUMENT/CDN架構.png`，可以更具體整理出這個專案的雲端設計思路：
-
-- 對外流量會直接進入 `Public Subnet` 中的應用服務入口
-- 應用服務以一台 `EC2` 佈在 `Public Subnet`，承接 Flask API 與背景排程
-- `Redis` 與 `RDS SQL Server` 放在 `Private Subnet`，降低核心資料直接暴露風險
-- 商品圖片由 `S3 + CloudFront` 提供交付與快取
-- 註冊通知信流程走 `API Gateway -> Lambda -> SES -> User`
-
-### 圖片 CDN 實際流程
-
-根據 `DOCUMENT/CDN架構.png`，商品圖片的請求流程是：
-
-1. 商品頁先向 Flask 圖片 API 請求圖片列表
-2. 後端查 MSSQL 內的圖片 metadata，例如 `storage_key`、`is_main`、`width`、`height`、`visibility`
-3. 若圖片是公開資源，後端直接組出 CloudFront URL
-4. 若圖片是私有資源，後端改產生 Signed URL，圖上設計支援 `CloudFront Signed URL` 或 `S3 presigned URL`
-5. 前端再向 CloudFront 取圖，命中 `Edge Cache` 就直接回應，未命中則透過 `Origin Access Control` 回源到私有 S3 bucket `product-images`
-
-這個設計代表我在專題中不只是把圖片搬到 S3，而是進一步思考：
-
-- 公開圖與私有圖要用不同交付策略
-- CloudFront 應該站在使用者與 S3 之間，減少源站壓力
-- S3 bucket 可維持私有，不直接暴露給前端
-- 後端 API 應負責 URL 組裝與權限判斷，而不是把儲存細節暴露給前端
-
-### 我做的後端設計重點
-
-#### A. 模組化 API 架構
-
-我把 API 依功能拆成不同 Blueprint，讓每個模組的責任單一、方便維護：
-
-- `LoginPage.py`：登入 / token / 登出
-- `RegisterPage.py`：註冊與欄位驗證
-- `HomePage.py`：首頁商品列表
-- `GoodPage.py`：商品列表頁
-- `GoodDetail.py`：商品明細 / 價格 / 評論 / 點擊 / 收藏
-- `ClientPage.py`：會員資料與收藏清單
-- `ProductPicture.py`：商品圖片 URL
-
-#### B. Redis + Database 的混合策略
-
-`clickTimes` 是高頻更新欄位，如果每次點擊都直接寫資料庫，成本高且容易造成壓力。因此我設計了：
-
-- `Write-Back`：先寫 Redis，再定期回寫 DB
-- `Cache-Aside`：查詢時優先讀 Redis，沒有再回 DB
-- `Fallback`：Redis 異常時改直接寫 DB，避免功能中斷
-- `Batch Sync`：背景排程定期合併 Redis 與 DB，取較大值避免資料被覆蓋
-
-這段邏輯集中在 `serverclient/services/click_times_service.py`。
-
-#### C. 雲端圖片交付
-
-專案早期把圖片直接存在資料庫，後來我把流程改成：
-
-- 圖片本體存 S3
-- 資料庫只保留索引與 metadata
-- 前端透過 API 拿 CloudFront URL 或簽名 URL
-
-這樣做的價值是：
-
-- 減少 SQL Server 容量與查詢負擔
-- 圖片交付更適合走 CDN
-- 後續若要做圖片權限控管，也有清楚的 `visibility` 設計
-- 能配合 CloudFront Edge Cache 提升圖片載入效率
-
-#### D. AWS 基礎架構觀念
-
-從架構圖可以看出，我在專題中已經開始用雲端部署的基本分層來思考：
-
-- 以公開入口與應用層分離的方式整理外部流量
-- 應用層與資料層分開，避免資料庫直接對外
-- 以 `Public Subnet / Private Subnet` 做角色分離
-- 以 `API Gateway + Lambda + SES` 把通知信功能拆成獨立流程
-
-#### E. 驗證與安全
-
-- 會員密碼使用雜湊儲存，不直接保存明碼
-- 以 JWT 管理登入狀態
-- 提供 refresh token 更新 access token
-- 登出時把 token 寫入 Redis blacklist，避免舊 token 繼續使用
-- 保護型 API 透過 `@token_required` 裝飾器統一驗證
-
-## 資料模型
-
-主要資料表定義在 `serverclient/init.sql`，ORM 對應在 `serverclient/models/models.py`。
-
-核心資料表如下：
-
-- `Product`：商品主檔
-- `Price_Now`：各通路目前價格
-- `Price_History`：價格歷史紀錄
-- `Client`：會員資料
-- `Client_Favorites`：會員收藏清單
-- `Good_Review`：商品評論
-- `Product_Picture`：商品圖片索引與雲端欄位
-
-這樣的拆分方式讓商品主資料、價格快照、歷史紀錄與會員互動資料能分開管理，也比較容易擴充。
-
-## 代表性檔案
-
-如果要快速理解我做的部分，可以先看這些檔案：
-
-- `serverclient/main.py`：Flask 啟動、Blueprint 註冊、背景排程
-- `serverclient/routes/LoginPage.py`：登入、refresh、登出 blacklist
-- `serverclient/routes/RegisterPage.py`：註冊驗證與通知串接
-- `serverclient/routes/GoodDetail.py`：商品明細、價格、評論、點擊、收藏
-- `serverclient/routes/ClientPage.py`：會員資料與收藏管理
-- `serverclient/services/click_times_service.py`：Redis / DB 一致性設計
-- `serverclient/services/s3_service.py`：S3 / CloudFront 圖片服務
-- `serverclient/services/migrate_sql_to_s3.py`：圖片遷移工具
-- `serverclient/models/models.py`：資料模型
-- `serverclient/init.sql`：Schema 與示範資料
-
-## 專案結構
-
-```text
-beautyCX/
-|- Client/                  # React 前端
-|- serverclient/            # Flask 後端與雲端邏輯
-|  |- routes/               # API 模組
-|  |- services/             # 快取、S3、遷移服務
-|  |- dbconfig/             # DB / Redis 連線設定
-|  |- models/               # SQLAlchemy models
-|  |- utils/                # JWT 驗證工具
-|  |- init.sql              # 資料表與種子資料
-|  |- openapi.yaml          # API 文件
-|- DOCUMENT/                # 架構圖與資料處理輔助檔
-|- README.md                # 作品集導向說明文件
-```
-
-## 架構圖
-
-AWS 與 CDN 架構圖放在 `DOCUMENT/`：
-
-![AWS 架構](./DOCUMENT/aws-architecture.png)
-
-![CDN 架構](./DOCUMENT/CDN架構.png)
-
-## Terraform 流程
-
-我另外補了一套對應目前雲架構的 Terraform 樣板，放在 `infra/terraform/`，涵蓋：
-
-- `VPC / Public Subnet / Private Subnet`
-- `EC2`
-- `RDS SQL Server`
-- `ElastiCache Redis`
-- `S3 + CloudFront`
-- `API Gateway + Lambda + SES`
-
-快速使用方式：
+## 本機開發
 
 ```bash
-cd infra/terraform
-cp terraform.tfvars.example terraform.tfvars
-terraform init
-terraform plan
+cp .env.example .env
+npm --prefix serverclient install
+npm --prefix Client install
+docker compose up --build
 ```
 
-敏感資訊像 `aws_access_key_id`、`aws_secret_access_key` 與資料庫帳密都保留空白，需自行填入 `terraform.tfvars` 或改用環境變數。
+開啟服務：
 
-## CI/CD 流程
+- 前端：<http://localhost:3000>
+- API health check：<http://localhost:8080/health>
+- 前端反向代理 API health check：<http://localhost:3000/api/health>
 
-我另外補了第一版 CI/CD，核心策略是：
-
-- 後端先 Docker 化，由 GitHub Actions 建 image
-- 前端先產生 `build artifact`
-- 正式部署先放在單台 `EC2`
-- EC2 上以 `docker compose` 跑後端 container 與 nginx
-
-對應檔案：
-
-- `.github/workflows/ci.yml`
-- `.github/workflows/deploy.yml`
-- `serverclient/Dockerfile`
-- `deploy/docker-compose.prod.yml`
-- `deploy/nginx/default.conf`
-- `deploy/README.md`
-
-其中 deploy workflow 會做三件事：
-
-1. build React 前端靜態檔
-2. build 並 push 後端 Docker image 到 `GHCR`
-3. 透過 SSH 把前端 artifact 與 compose 設定送到 EC2，再執行 `docker compose up -d`
-
-EC2 端不需要先上 ECS，現階段只要有 Docker 與 Docker Compose plugin 即可。GitHub Secrets 清單整理在 `deploy/README.md`。
-
-## 如何啟動專案
-
-### 後端
+## 驗證 DevOps 設定
 
 ```bash
-cd serverclient
-pip install -r requirements.txt
-python main.py
+docker compose config --quiet
+npm --prefix serverclient test
+npm --prefix Client run build
+terraform -chdir=infra/terraform fmt -check -recursive
+terraform -chdir=infra/terraform init -backend=false
+terraform -chdir=infra/terraform validate
 ```
 
-預設啟動位置：`http://localhost:5001`
+## AWS ECS CI/CD 架構
 
-### 前端
+Pipeline 流程：
+
+1. Source：CodePipeline 透過 CodeStar Connection 從 GitHub 取得程式碼。
+2. Build：CodeBuild 執行 `buildspec.yml`。
+3. Images：CodeBuild 建置 API 與 Web Docker image，並推送到 ECR。
+4. Deploy：CodePipeline 使用 `imagedefinitions.json` 更新 ECS Fargate service。
+
+因為 CodeBuild 需要建置 Docker image，所以 CodeBuild project 必須啟用 privileged mode。
+
+## 部署基礎設施
 
 ```bash
-cd Client
-npm install
-npm start
+cp infra/terraform/terraform.tfvars.example infra/terraform/terraform.tfvars
+# 編輯 github_repo_id 與 codestar_connection_arn
+terraform -chdir=infra/terraform init
+terraform -chdir=infra/terraform plan
+terraform -chdir=infra/terraform apply
 ```
 
-預設啟動位置：`http://localhost:3000`
+小型專案預設為 1 個 Fargate task，並在同一個 task 中執行 `web` 與 `api` 兩個 container，前方使用 1 個 ALB 對外提供 HTTP 服務。
 
-### 需要的環境設定
+## 重要設定
 
-建議以環境變數管理下列設定：
+### Container 名稱契約
 
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `DB_SERVER`
-- `DB_PORT`
-- `DB_NAME`
-- `JWT_SECRET_KEY`
-- `JWT_REFRESH_SECRET_KEY`
-- `REDIS_HOST`
-- `REDIS_PORT`
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `AWS_REGION`
-- `S3_BUCKET_NAME`
-- `CLOUDFRONT_DOMAIN`
+`buildspec.yml` 產出的 `imagedefinitions.json` 使用以下 container 名稱：
 
-## 我希望 HR 看見的能力
+- `api`
+- `web`
 
-- 我會把功能拆模組，而不是把所有邏輯塞進單一檔案
-- 我會考慮快取、資料一致性與失敗 fallback，而不是只追求功能能跑
-- 我會思考圖片、資料庫與 CDN 各自適合做什麼
-- 我會把註冊通知、圖片交付、熱門度統計拆成不同服務，降低耦合
-- 我知道 demo 可以先做起來，但正式上線前要補齊 secrets 管理、測試、CI/CD 與部署自動化
+這兩個名稱必須與 ECS task definition 中的 container name 完全一致，否則 CodePipeline 的 ECS deploy action 無法更新 image。
 
-## 後續可優化方向
+### API 反向代理
 
-如果把這份專題再往正式產品推進，我會優先補這幾件事：
+`web` container 會將 `/api` 代理到 API container：
 
-- 將敏感設定全面移出程式碼，改接 `.env` / Secret Manager
-- 增加 pytest 與 API 自動化測試，補足回歸測試
-- 建立 Docker 與 CI/CD 流程，讓部署更一致
-- 整理 `openapi.yaml`，移除與目前程式不一致的舊端點描述
-- 補上權限分層、監控與日誌告警
+- 本機 Docker Compose：`API_UPSTREAM=api:8080`
+- ECS Fargate 同 task 部署：`API_UPSTREAM=127.0.0.1:8080`
 
-## 備註
+### 資料庫
 
-- 本 README 以 `serverclient/` 實際程式碼為主整理
-- `openapi.yaml` 與部分舊 README 內容含有較早期的設計紀錄，展示時建議以本文件與程式碼本身為準
-- 若要進一步看 API 細節，可從 `serverclient/openapi.yaml` 與 `serverclient/routes/` 對照閱讀
+原始專案資料來源是 AWS RDS for SQL Server / MSSQL 備份。作品集展示版為了降低雲端成本與維運複雜度，已將 `DB20251219_backup` 轉為 SQLite snapshot：
+
+- SQLite 檔案：`data/beautycx.sqlite`
+- 轉換報告：`data/beautycx-sqlite-report.json`
+- 匯入資料量：Product 42 筆、Price_Now 126 筆、Price_History 509 筆、Product_Picture 48 筆
+
+正式 production 若需要多人高併發寫入，可再切回 RDS SQL Server 或改用 RDS PostgreSQL。
+
+## MSSQL 備份轉 SQLite
+
+目前轉換流程會先用 SQL Server container 還原 `.bak`，再匯出 JSON 並建立 SQLite：
+
+```bash
+# 備份檔不建議 commit，放在專案根目錄即可
+# DB20251219_backup
+
+# 產生 SQLite snapshot
+node --experimental-sqlite tools/mssql-json-to-sqlite.mjs .tmp/mssql/export data/beautycx.sqlite data/beautycx-sqlite-report.json
+```
+
+`tools/mssql-json-to-sqlite.mjs` 保留在專案中，方便日後重新產生展示資料庫。

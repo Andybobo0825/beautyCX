@@ -1,0 +1,55 @@
+name: beautycx
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: serverclient/Dockerfile
+      target: production
+    image: beautycx-api:local
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      DATABASE_PATH: /app/data/beautycx.sqlite
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('node:http').get('http://127.0.0.1:8080/health/ready', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - app
+
+  web:
+    build:
+      context: ./Client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+    image: beautycx-web:local
+    environment:
+      API_UPSTREAM: api:8080
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "${WEB_PORT:-3000}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge

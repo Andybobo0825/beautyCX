@@ -1,0 +1,48 @@
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - set -euo pipefail
+      - echo "Installing app dependencies"
+      - npm --prefix serverclient ci
+      - npm --prefix Client ci
+  pre_build:
+    commands:
+      - set -euo pipefail
+      - echo "Validating Docker Compose configuration"
+      - docker compose -f compose.yaml config --quiet
+      - echo "Running application checks"
+      - npm --prefix serverclient test
+      - npm --prefix Client run build
+      - echo "Logging in to Amazon ECR"
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+      - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:-latest}"
+      - IMAGE_TAG="${IMAGE_TAG:0:12}"
+      - API_REPOSITORY_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_API_REPOSITORY"
+      - WEB_REPOSITORY_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_WEB_REPOSITORY"
+  build:
+    commands:
+      - set -euo pipefail
+      - echo "Building Docker images with tag $IMAGE_TAG"
+      - docker build -t "$API_REPOSITORY_URI:$IMAGE_TAG" -t "$API_REPOSITORY_URI:latest" -f serverclient/Dockerfile .
+      - docker build --build-arg VITE_API_BASE_URL=/api -t "$WEB_REPOSITORY_URI:$IMAGE_TAG" -t "$WEB_REPOSITORY_URI:latest" -f Client/Dockerfile Client
+  post_build:
+    commands:
+      - set -euo pipefail
+      - echo "Pushing Docker images"
+      - docker push "$API_REPOSITORY_URI:$IMAGE_TAG"
+      - docker push "$API_REPOSITORY_URI:latest"
+      - docker push "$WEB_REPOSITORY_URI:$IMAGE_TAG"
+      - docker push "$WEB_REPOSITORY_URI:latest"
+      - printf '[{"name":"api","imageUri":"%s"},{"name":"web","imageUri":"%s"}]' "$API_REPOSITORY_URI:$IMAGE_TAG" "$WEB_REPOSITORY_URI:$IMAGE_TAG" > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
