@@ -33,6 +33,20 @@ export const SearchdataProvider = ({ children }) => {
   );
 };
 
+export const ClientIdContext = createContext({
+  clientId: null,
+  setClientId: () => { }
+});
+export const ClientIdProvider = ({ children }) => {
+  const [clientId, setClientId] = useState(null);
+
+  return (
+    <ClientIdContext.Provider value={{ clientId, setClientId }}>
+      {children}
+    </ClientIdContext.Provider>
+  );
+};
+
 /**遮罩 */
 export const MaskContext = createContext({
   mask: false,

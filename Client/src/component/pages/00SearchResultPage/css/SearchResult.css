@@ -39,10 +39,13 @@ p {
 
 .SRFilterRange {
     display: flex;
+    flex-direction: row;
+    margin: 0.5vw;
+    /* align-items: flex-start; */
     align-items: center;
 }
 
-.SRFilterRangeText, .SRFilterComment{
+.SRFilterRangeText{
     font-size: 1.5vw;
     line-height: 1.5vw;
     font-weight: bold; 
@@ -52,6 +55,7 @@ p {
     display: flex;
     margin-left: -2.5vw;
     margin-right: -3vw;
+    /* margin-top: 0.5vh; */
     max-width: 20vw
 }
 

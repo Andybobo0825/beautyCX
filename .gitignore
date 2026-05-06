@@ -75,11 +75,6 @@ instance/
 # ==========================
 # 🐳 Docker
 # ==========================
-# Docker build files
-**/Dockerfile*
-**/docker-compose*.yml
-.dockerignore
-
 # Docker temporary / build folders
 tmp/
 *.pid
@@ -132,3 +127,10 @@ DOCUMENT/Binary
 # Deploy runtime files
 deploy/backend.env
 deploy/frontend-build/
+
+# Local agent/runtime files
+.omx/
+.tmp/
+.git.broken-backup-*/
+DB20251219_backup
+*.bak

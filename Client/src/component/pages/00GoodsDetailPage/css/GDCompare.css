@@ -14,9 +14,9 @@
 }
 
 .GDCompareTitle {
-    font-size: 1.5vw;
+    font-size: 1.25vw;
     margin-left: 5vw;
-    margin-bottom: 5vh;
+    margin-bottom: 2vh;
     font-weight: bold;
 }
 
@@ -54,15 +54,6 @@ td {
     border-bottom: 0.3vh  solid #ED8A8A;
     border-right: 0.3vh solid #ED8A8A;
     border-left: 0.3vh solid #ED8A8A;
-}
-
-.GDCompareBodyTr:hover {
-    background-color: #b7b7b7;
-    cursor: pointer;
-}
-
-.GDCompareTtdFirst a:hover{
-    font-size: larger;
 }
 /*
 .GDCompareTtdFirst {

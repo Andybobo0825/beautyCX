@@ -6,7 +6,7 @@ import Select from 'react-select';
 import { ImStarFull } from "react-icons/im";
 import { NavLink, useLocation } from "react-router-dom";
 import axios from "axios";
-import { getProductPic } from "../../util/util";
+import { getProductPic, getBatchProductPics } from "../../util/util";
 import { MaskContext } from "../../../ContextAPI";
 
 const FixStyle = {
@@ -155,11 +155,11 @@ const SearchResult = () => {
 
                 if (response.status === 200) {
                     // 確保 results 是陣列
-                    data = Array.isArray(response.data.results) 
-                        ? response.data.results 
+                    data = Array.isArray(response.data.results)
+                        ? response.data.results
                         : [];
                 }
-                else if(response.status === 204){
+                else if (response.status === 204) {
                     data = [];  // 204 時設為空陣列
                     alert("找不到符合條件的商品");
                 }
@@ -194,7 +194,7 @@ const SearchResult = () => {
         fetchData();
     }, [location.search]);
 
-        // 新增：前端逐步快取圖片，不阻塞渲染
+    // 新增：前端逐步快取圖片，不阻塞渲染 (批次優化版)
     useEffect(() => {
         if (!originalData.length) return;
 
@@ -202,31 +202,34 @@ const SearchResult = () => {
         const uncachedItems = originalData.filter(item => !imageMap[item.pId]);
         if (!uncachedItems.length) return;
 
-        // 逐步抓取圖片，每抓到一張就更新 imageMap
-        uncachedItems.forEach(item => {
-            getProductPic(item.pId)
-                .then(pic => {
-                    setImageMap(prev => ({
-                        ...prev,
-                        [item.pId]: pic || 'placeholder.jpg'
-                    }));
-                })
-                .catch(err => {
-                    console.error(`抓圖片失敗: ${item.pId}`, err);
-                    setImageMap(prev => ({
-                        ...prev,
-                        [item.pId]: 'placeholder.jpg'
-                    }));
+        const pIds = uncachedItems.map(item => item.pId);
+
+        // 批次抓取圖片
+        // const { getBatchProductPics } = require("../../util/util");
+        getBatchProductPics(pIds)
+            .then(picMap => {
+                const newMap = {};
+                pIds.forEach(pId => {
+                    newMap[pId] = (picMap[pId] && picMap[pId].url) ? picMap[pId].url : 'placeholder.jpg';
                 });
-        });
+
+                setImageMap(prev => ({
+                    ...prev,
+                    ...newMap
+                }));
+            })
+            .catch(err => {
+                console.error(`批次抓圖片失敗`, err);
+            });
+
     }, [originalData]);
 
     // 過濾和排序邏輯 (基於 originalData) - 保持不變
     useEffect(() => {
-        if(originalData.length > 0) {
+        if (originalData.length > 0) {
 
             let data = [...originalData];
-    
+
             const min = parseFloat(priceMin);
             const max = parseFloat(priceMax);
             if (!isNaN(min)) {
@@ -235,21 +238,21 @@ const SearchResult = () => {
             if (!isNaN(max)) {
                 data = data.filter(item => item.price_min <= max);
             }
-    
+
             if (CommentSelectedOption?.value === 'option1') {
                 data.sort((a, b) => b.review - a.review);
             } else if (CommentSelectedOption?.value === 'option2') {
                 data.sort((a, b) => a.review - b.review);
             }
-    
+
             if (PriceSelectedOption?.value === 'option4') {
                 data.sort((a, b) => b.price_min - a.price_min);
             } else if (PriceSelectedOption?.value === 'option5') {
                 data.sort((a, b) => a.price_min - b.price_min);
             }
-    
+
             setFilteredData(data);
-    
+
             if (CommentSelectedOption?.value === 'option0' && PriceSelectedOption?.value === 'option3' && priceMin === '' && priceMax === '') {
                 setFilteredData(originalData);
             }
@@ -257,12 +260,12 @@ const SearchResult = () => {
     }, [CommentSelectedOption, PriceSelectedOption, priceMin, priceMax, originalData]);
 
 
-    
+
     return (
         <div className="SearchResult">
-            <div className="SRFilter" style={{ gap: "20px"}}>
-                <div style={{display: "flex", alignItems: "center"}}>
-                    <div className="SRFilterText" style={{marginRight: "1vw"}}>進階篩選</div>
+            <div className="SRFilter" style={{ gap: "20px" }}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                    <div className="SRFilterText" style={{ marginRight: "1vw" }}>進階篩選</div>
                     <div className="SRFilterPrice" >
                         <Select
                             value={CommentSelectedOption}
@@ -305,11 +308,11 @@ const SearchResult = () => {
                     </div>
                 </div>
             </div>
-            
+
             {filteredData.length > 0 && filteredData.map((item, index) => (
                 <div className="SRDisplay" key={item.pId || index}>
                     <div className="SRDisplayPic">
-                        <img src={imageMap[item.pId] || 'placeholder.jpg'} alt={"商品"} /> 
+                        <img src={imageMap[item.pId] || 'placeholder.jpg'} alt={"商品"} />
                     </div>
                     <NavLink to={`/GoodsDetailPage?pId=${item.pId}`} className="SRLink">
                         <div className="SRDisplayProduct">

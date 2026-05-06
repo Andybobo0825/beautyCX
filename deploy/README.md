@@ -1,43 +1,59 @@
-# Deploy Layout
+# GitHub Actions 部署說明
 
-這份目錄對應 EC2 上的部署結構：
+這份專案目前改用 GitHub Actions 做 CI/CD，不使用 AWS CodePipeline / CodeBuild / Terraform pipeline。
 
-- `docker-compose.prod.yml` 用來跑後端 container 與 nginx
-- `nginx/default.conf` 提供 SPA 靜態站台與 `/api` 反向代理
-- `backend.env.example` 是後端 runtime 環境變數範本
+## 原則
 
-## 部署方式
+- `Client/` 與 `serverclient/` 的既有架構與程式語言不重寫。
+- 後端保留 Python Flask + SQLAlchemy 架構。
+- 作品集展示版使用 `data/beautycx.sqlite`，由 `DATABASE_PATH=/app/data/beautycx.sqlite` 啟用。
+- Docker、Compose、GitHub Actions 只負責包裝、建置、驗證與部署。
 
-CI/CD 會做兩件事：
+## 本機 Docker Compose
 
-1. 建立後端 Docker image 並推到 GHCR
-2. 建立前端 `build/` artifact，透過 SSH 傳到 EC2
+```bash
+docker compose config --quiet
+docker compose up --build
+```
 
-EC2 上只需要：
+服務：
 
-- Docker
-- Docker Compose plugin
-- 可讓 deploy 使用者執行 Docker
+- 前端：`http://localhost:3000`
+- 後端：`http://localhost:5001`
+- Redis：`localhost:6379`
 
-## GitHub Secrets
+## GitHub Actions
 
-部署 workflow 會用到這些 secrets：
+### CI
+
+`.github/workflows/ci.yml` 會在 PR 與 push 到 `main` 時執行：
+
+1. 安裝並建置 React 前端。
+2. 建置 Python Flask 後端 Docker image。
+3. 檢查 `compose.yaml` 語法。
+
+### CD
+
+`.github/workflows/deploy.yml` 會在 push 到 `main` 或手動觸發時：
+
+1. 建置前端 image 並推送到 GHCR。
+2. 建置後端 image 並推送到 GHCR。
+3. 若有設定 EC2 secrets，透過 SSH 在 EC2 上執行 `docker compose pull` 與 `docker compose up -d`。
+
+## 需要的 GitHub Secrets
+
+若只要 CI，不需要設定 secrets。
+
+若要部署到 EC2，請設定：
 
 - `EC2_HOST`
 - `EC2_USER`
 - `EC2_SSH_KEY`
 - `EC2_DEPLOY_PATH`
-- `GHCR_USERNAME`
-- `GHCR_TOKEN`
 - `APP_SECRET_KEY`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `DB_SERVER`
-- `DB_PORT`
-- `DB_NAME`
-- `REDIS_HOST`
-- `REDIS_PORT`
-- `REDIS_DB`
+
+選填，若你的圖片服務要連 S3 / CloudFront 再設定：
+
 - `AWS_REGION`
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
@@ -45,8 +61,11 @@ EC2 上只需要：
 - `CLOUDFRONT_DOMAIN`
 - `API_GATEWAY_URL`
 
-前端 build 會固定使用：
+## EC2 前置需求
 
-- `REACT_APP_API_URL=/api`
+EC2 只需要：
 
-這樣 nginx 會把 `/api/*` 轉發到 backend container。
+- Docker
+- Docker Compose plugin
+- 部署使用者可執行 Docker
+- 防火牆 / Security Group 開放 HTTP 80

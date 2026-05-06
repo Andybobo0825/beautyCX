@@ -21,7 +21,8 @@
     "react-select": "^5.10.1",
     "react-slick": "^0.31.0",
     "slick-carousel": "^1.8.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "react-image-gallery": "^1.4.0"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -11,55 +11,23 @@ permissions:
   packages: write
 
 jobs:
-  frontend-artifact:
+  build-and-push:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: Client
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install frontend dependencies
-        run: npm install
-
-      - name: Build frontend artifact
-        env:
-          REACT_APP_API_URL: /api
-          CI: "true"
-        run: npm run build
-
-      - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: Client/build
-          if-no-files-found: error
-
-  backend-image:
-    runs-on: ubuntu-latest
-
     outputs:
-      image_repo: ${{ steps.image.outputs.image_repo }}
-      image_uri: ${{ steps.image.outputs.image_uri }}
-
+      backend_image: ${{ steps.meta.outputs.backend_image }}
+      frontend_image: ${{ steps.meta.outputs.frontend_image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Compute image URI
-        id: image
+      - name: Compute image names
+        id: meta
         run: |
           OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
-          echo "image_repo=ghcr.io/${OWNER_LC}/beautycx-backend" >> "${GITHUB_OUTPUT}"
-          echo "image_uri=ghcr.io/${OWNER_LC}/beautycx-backend:sha-${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "backend_image=ghcr.io/${OWNER_LC}/beautycx-backend:sha-${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "frontend_image=ghcr.io/${OWNER_LC}/beautycx-frontend:sha-${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "backend_latest=ghcr.io/${OWNER_LC}/beautycx-backend:latest" >> "${GITHUB_OUTPUT}"
+          echo "frontend_latest=ghcr.io/${OWNER_LC}/beautycx-frontend:latest" >> "${GITHUB_OUTPUT}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -74,106 +42,113 @@ jobs:
       - name: Build and push backend image
         uses: docker/build-push-action@v6
         with:
-          context: ./serverclient
+          context: .
           file: ./serverclient/Dockerfile
           push: true
           tags: |
-            ${{ steps.image.outputs.image_uri }}
-            ${{ steps.image.outputs.image_repo }}:latest
+            ${{ steps.meta.outputs.backend_image }}
+            ${{ steps.meta.outputs.backend_latest }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./Client
+          file: ./Client/Dockerfile
+          push: true
+          build-args: |
+            REACT_APP_API_URL=/api
+          tags: |
+            ${{ steps.meta.outputs.frontend_image }}
+            ${{ steps.meta.outputs.frontend_latest }}
+
+  check-deploy-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - name: Check EC2 deploy secrets
+        id: check
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_DEPLOY_PATH: ${{ secrets.EC2_DEPLOY_PATH }}
+        run: |
+          if [ -n "${EC2_HOST}" ] && [ -n "${EC2_USER}" ] && [ -n "${EC2_SSH_KEY}" ] && [ -n "${EC2_DEPLOY_PATH}" ]; then
+            echo "enabled=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+            echo "EC2 deploy secrets are not fully configured; image build/push completed and deploy is skipped."
+          fi
 
   deploy-ec2:
     runs-on: ubuntu-latest
     needs:
-      - frontend-artifact
-      - backend-image
-
+      - build-and-push
+      - check-deploy-secrets
+    if: needs.check-deploy-secrets.outputs.enabled == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend-build
-
-      - name: Prepare release bundle
+      - name: Prepare release files
         run: |
-          mkdir -p release/nginx
+          mkdir -p release
           cp deploy/docker-compose.prod.yml release/docker-compose.prod.yml
-          cp deploy/nginx/default.conf release/nginx/default.conf
-          tar -czf release/frontend-build.tar.gz -C frontend-build .
 
-      - name: Prepare remote directories
+      - name: Prepare remote directory
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            mkdir -p "${{ secrets.EC2_DEPLOY_PATH }}/nginx"
-            mkdir -p "${{ secrets.EC2_DEPLOY_PATH }}/frontend-build"
+          script: mkdir -p "${{ secrets.EC2_DEPLOY_PATH }}"
 
-      - name: Upload release bundle
+      - name: Upload compose file
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "release/docker-compose.prod.yml,release/frontend-build.tar.gz"
+          source: "release/docker-compose.prod.yml"
           target: ${{ secrets.EC2_DEPLOY_PATH }}
-          overwrite: true
-
-      - name: Upload nginx config
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "release/nginx/default.conf"
-          target: ${{ secrets.EC2_DEPLOY_PATH }}/nginx
+          strip_components: 1
           overwrite: true
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          BACKEND_IMAGE: ${{ needs.build-and-push.outputs.backend_image }}
+          FRONTEND_IMAGE: ${{ needs.build-and-push.outputs.frontend_image }}
+          APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          CLOUDFRONT_DOMAIN: ${{ secrets.CLOUDFRONT_DOMAIN }}
+          API_GATEWAY_URL: ${{ secrets.API_GATEWAY_URL }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: BACKEND_IMAGE,FRONTEND_IMAGE,APP_SECRET_KEY,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,S3_BUCKET_NAME,CLOUDFRONT_DOMAIN,API_GATEWAY_URL
           script: |
             set -euo pipefail
             cd "${{ secrets.EC2_DEPLOY_PATH }}"
 
-            cat > .env <<'EOF'
-            BACKEND_IMAGE=${{ needs.backend-image.outputs.image_uri }}
-            EOF
+            cat > .env <<EOF_ENV
+            BACKEND_IMAGE=${BACKEND_IMAGE}
+            FRONTEND_IMAGE=${FRONTEND_IMAGE}
+            HTTP_PORT=80
+            SECRET_KEY=${APP_SECRET_KEY:-dev_key_for_testing}
+            AWS_REGION=${AWS_REGION:-ap-east-2}
+            AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+            AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+            S3_BUCKET_NAME=${S3_BUCKET_NAME:-product-images}
+            CLOUDFRONT_DOMAIN=${CLOUDFRONT_DOMAIN:-cdn.example.com}
+            API_GATEWAY_URL=${API_GATEWAY_URL:-}
+            EOF_ENV
 
-            cat > backend.env <<'EOF'
-            PORT=5001
-            FLASK_DEBUG=false
-            SQLALCHEMY_ECHO=false
-            SECRET_KEY=${{ secrets.APP_SECRET_KEY }}
-            DB_USERNAME=${{ secrets.DB_USERNAME }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            DB_SERVER=${{ secrets.DB_SERVER }}
-            DB_PORT=${{ secrets.DB_PORT }}
-            DB_NAME=${{ secrets.DB_NAME }}
-            DB_DRIVER=ODBC Driver 18 for SQL Server
-            REDIS_HOST=${{ secrets.REDIS_HOST }}
-            REDIS_PORT=${{ secrets.REDIS_PORT }}
-            REDIS_DB=${{ secrets.REDIS_DB }}
-            AWS_REGION=${{ secrets.AWS_REGION }}
-            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
-            CLOUDFRONT_DOMAIN=${{ secrets.CLOUDFRONT_DOMAIN }}
-            API_GATEWAY_URL=${{ secrets.API_GATEWAY_URL }}
-            EOF
-
-            rm -rf frontend-build/*
-            tar -xzf frontend-build.tar.gz -C frontend-build
-
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f

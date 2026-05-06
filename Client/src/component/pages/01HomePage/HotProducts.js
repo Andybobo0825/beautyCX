@@ -5,7 +5,8 @@ import { NavLink } from "react-router-dom";
 import axios from "axios";
 import { SearchdataContext } from "../../../ContextAPI";
 import { useNavigate } from "react-router-dom";
-import { getProductPic } from "../../util/util";
+import { getProductPic, getBatchProductPics } from "../../util/util";
+
 const HotProducts = () => {
   const [hotProducts, setHotProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,22 +17,38 @@ const HotProducts = () => {
   // 載入熱門商品（根據 limit 動態改變）
   const fetchProducts = async (limitVal) => {
     setLoading(true);
-    const response = await axios.get(
-      `${process.env.REACT_APP_API_URL}/homepage/product?sort=clickTimes`       //移除limit=${limitVal}
-    ); 
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/homepage/product?sort=clickTimes`
+      );
 
-    if (response.data) {
-      const formatted = await Promise.all(
-        response.data.results.slice(0, limitVal).map(async (p) => ({            //用limitVal更改顯示數量
+      if (response.data && response.data.results) {
+        const slicedData = response.data.results.slice(0, limitVal);
+
+        // 1. 收集所有 ID
+        const pIds = slicedData.map(p => p.pId);
+
+        // 2. 批次取得圖片
+        let picMap = {};
+        if (pIds.length > 0) {
+          picMap = await getBatchProductPics(pIds);
+        }
+
+        // 3. 組合資料
+        const formatted = slicedData.map(p => ({
           Id: p.pId,
           Name: p.pName,
           Price: p.price_min,
           OriginalPrice: p.price_max,
-          Image: await getProductPic(p.pId), // ✅ 現在這裡 await 是有效的
+          // 使用 MAP 查找圖片 URL
+          Image: (picMap[p.pId] && picMap[p.pId].url) ? picMap[p.pId].url : "",
           Rating: p.review,
-        }))
-      );
-      setHotProducts(formatted);
+        }));
+
+        setHotProducts(formatted);
+      }
+    } catch (e) {
+      console.error("Fetch hot products failed", e);
     }
     setLoading(false);
   };

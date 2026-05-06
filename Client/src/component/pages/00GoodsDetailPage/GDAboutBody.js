@@ -1,195 +1,195 @@
-import "./css/GDABody.css";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import ImageGallery from "react-image-gallery";
 import { ImStarFull } from "react-icons/im";
-import {
-  IoIosArrowDropleftCircle,
-  IoIosArrowDroprightCircle,
-} from "react-icons/io";
-import Slider from "react-slick";
+import "react-image-gallery/styles/css/image-gallery.css";
+import { IoIosArrowDropleftCircle, IoIosArrowDroprightCircle } from "react-icons/io";
+import { MaskContext, ClientIdContext } from "../../../ContextAPI";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
+import "./css/GDAboutBody.css";
 import GDHistoryCompare from "./GDPriceHistory";
 import { getProductPic, getProductAllPic } from "../../util/util";
-import { useMemo, useContext } from "react";
-import { useRef } from "react";
-
-import { MaskContext } from "../../../ContextAPI";
 
 const GDAboutBody = () => {
+  const [product, setProduct] = useState(null);
+  const [images, setImages] = useState([]);
+  const [isTracking, setIsTracking] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const { setMask } = useContext(MaskContext);
+  const { clientId } = useContext(ClientIdContext);
+
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const pId = queryParams.get("pId");
-  const didSendClick = useRef(false);
 
-  const [showModal, setShowModal] = useState(false);
-  const [productData, setProductData] = useState({});
-  const [isTracking, setIsTracking] = useState(false);
-  const { setMask } = useContext(MaskContext);
+  // loading 狀態僅用於第一次抓取商品文字資料
+  const [loading, setLoading] = useState(true);
 
-  /**發送點擊次數更新請求*/
-  const sendClickUpdate = (pId) => {
-    axios
-      .post(`${process.env.REACT_APP_API_URL}/gooddetail/click/${pId}`)
-      .then((response) => {
-        console.log("點擊數更新成功", response.data);
-      })
-  }
-
-  /**取得商品資訊 */
-  const getProductData = async (pId) => {
+  // 1. 抓取商品基本資料與圖片 URL (優化版：先顯示 UI，圖片後載入)
+  const getProductData = async () => {
+    if (!pId) return;
     setMask(true);
 
-    const token = localStorage.getItem("accessToken");
-
-    // 只有在 pId 存在且 Token 存在時才發送請求
-    if (!pId) {
-      return;
-    }
-    if (!token) {
-      setIsTracking(false); // 確保未登入時按鈕顯示為「加入關注」
-      return;
-    }
-    const response = await axios.get(
-      `${process.env.REACT_APP_API_URL}/gooddetail/product/${pId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-
-    if (response.status === 200) {
-      const imgs = await getProductAllPic(pId);
-      const formatted = {
-        ...response.data.results,
-        images: imgs
-      }
-      formatted.isTrack === true ? setIsTracking(true) : setIsTracking(false);
-      setProductData(formatted);
-    }
-    setMask(false);
-  }
-
-  //設置商品圖
-  const settings = useMemo(() => ({
-    customPaging: function (i) {
-      if (!productData.images?.[i]) return null;
-      return (
-        <a>
-          <img
-            src={productData.images[i]}
-            alt={`縮圖${i + 1}`}
-            style={{ width: 40, height: 40, objectFit: "cover" }}
-          />
-        </a>
+    try {
+      // 1. 先抓文字資料 (速度快)
+      const res = await axios.get(
+        `${process.env.REACT_APP_API_URL}/gooddetail/product/${pId}`
       );
-    },
-    dots: true,
-    dotsClass: "slick-dots slick-thumb",
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-  }), [productData.images]);
 
-  // Effect 1: 載入商品詳細資訊 (不變)
-  useEffect(() => {
-    if (didSendClick.current) return; // 開發模式下第二次呼叫直接略過
-    didSendClick.current = true;
-  
-    sendClickUpdate(pId);
-    getProductData(pId);
-  }, [pId]);
+      const pData = res.data.results;
+      if (pData) {
+        setProduct({
+          Id: pData.pId,
+          Name: pData.pName,
+          Brand: pData.brand,
+          Category: pData.category,
+          Price: pData.price_min,
+          OriginalPrice: pData.price_max,
+          Rating: pData.review,
+          ReviewCount: "(100+)", // 範例
+        });
+      }
 
-  // 處理「加入關注」/「取消關注」按鈕點擊 (新增判斷是否登入)
-  const handleToggleTrack = () => {
-    const token = localStorage.getItem("accessToken");
+      // 2. 獲取完文字後，先關閉 Mask，讓使用者看到文字界面
+      setMask(false);
+      setLoading(false);
 
-    // 如果沒有 Token (未登入)，則提示用戶登入
-    if (!token) {
-      alert("請先登入以使用此功能。");
-      return;
+      // 3. 非同步抓取圖片 (不會阻塞 UI)
+      // 使用 util 中的 getProductAllPic
+      const picUrls = await getProductAllPic(pId);
+
+      // 轉換成 ImageGallery 格式
+      if (picUrls && picUrls.length > 0) {
+        const galleryImages = picUrls.map(url => ({
+          original: url,
+          thumbnail: url,
+          originalClass: "custom-gallery-image", // 自訂 CSS 用
+        }));
+        setImages(galleryImages);
+      } else {
+        // Fallback placeholder
+        setImages([{
+          original: "https://via.placeholder.com/600x400?text=No+Image",
+          thumbnail: "https://via.placeholder.com/150x100?text=No+Image"
+        }]);
+      }
+
+      // 4. 打後端記錄點擊 (如果在 useEffect 做可能會重複，這裡只做一次)
+      axios.post(`${process.env.REACT_APP_API_URL}/gooddetail/click/${pId}`)
+        .catch(e => console.error("Click log failed", e));
+
+    } catch (err) {
+      console.error("載入商品失敗", err);
+      // 發生錯誤也要確保 Mask 關閉
+      setMask(false);
+      setLoading(false);
     }
-
-    // 如果已登入且 pId 存在，則正常發送請求
-    if (!pId) {
-      console.warn("缺少 pId，無法切換追蹤狀態。");
-      return;
-    }
-
-    axios
-      .post(
-        `${process.env.REACT_APP_API_URL}/gooddetail/track`,
-        { pId: pId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      .then((response) => {
-        if (response.status === 200) {
-          setIsTracking(response.data.status === 1);
-          alert(response.data.message);
-        }
-      })
-      .catch((error) => {
-        console.error("切換追蹤狀態失敗:", error);
-        if (error.response.status === 401) {
-          alert("您的登入已過期，請重新登入。");
-        }
-      });
   };
 
+  /** 檢查追蹤狀態與切換 */
+  const toggleTrack = async () => {
+    if (!clientId) {
+      alert("請先登入會員");
+      return;
+    }
+    setMask(true);
+    try {
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_URL}/gooddetail/track`,
+        { pId: pId },
+        { withCredentials: true }
+      );
+      if (res.status === 200) {
+        setIsTracking(res.data.status === 1);
+        alert(res.data.message);
+      }
+    } catch (err) {
+      console.error("追蹤操作失敗", err);
+      alert("操作失敗，請稍後再試");
+    }
+    setMask(false);
+  };
+
+  // 檢查初始追蹤狀態 (可以跟 getProductData 平行執行)
+  const checkTrackStatus = async () => {
+    if (!clientId || !pId) return;
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_API_URL}/client/checkTrack`, { pId });
+      if (res.data && res.data.isTracking) {
+        setIsTracking(true);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    // 依賴改變時重新抓取
+    getProductData();
+    if (clientId) checkTrackStatus();
+  }, [pId, clientId]);
+
+  if (!product) {
+    // 如果還沒拿到文字資料，顯示空白或簡單的 Loading
+    return <div className="GDAboutBody"></div>;
+  }
 
   return (
-    <div className="GDAbout">
-      <div className="slider-container" style={{ width: "30%", marginRight: "10%" }}>
-        {productData.images?.length > 0 && (
-          <Slider key={productData.images.length} {...settings}>
-            {productData.images.map((img, index) => (
-              <div key={index}>
-                <img
-                  src={img}
-                  alt={`圖片${index}`}
-                  style={{ width: "100%" }}
-                />
-              </div>
-            ))}
-          </Slider>
-        )}
+    <div className="GDAboutBody">
+      {/* 左側圖片區 */}
+      <div className="GDABLeft">
+        <ImageGallery
+          items={images}
+          showPlayButton={false}
+          showFullscreenButton={true}
+          slideInterval={3000}
+          slideOnThumbnailOver={true}
+        />
       </div>
-      <div className="GDAText" key={productData.pName || "loading"}>
-        <div className="GDAContext">
-          <div className="GDABrand">{productData.brand}</div>
-          <div className="GDAName">{productData.pName}</div>
-          <br />
-          <br />
-          <div className="GDAPrice">
-            <span className="GDAOriginalPrice">${productData.price_max}</span>
-            <span className="GDADiscount">${productData.price_min}</span>
-          </div>
-          <br />
-          <span className="GDARate">
-            <ImStarFull size={20} color="gold" />
-            <span className="GDAScore">&nbsp;{productData.review}</span>
-          </span>
-          <br />
-          <br />
-          <br />
-          <br />
+
+      {/* 右側資訊區 */}
+      <div className="GDABRight">
+        <div className="GDABBrand">{product.Brand}</div>
+        <div className="GDABName">{product.Name}</div>
+
+        <div className="GDABRating">
+          <ImStarFull className="star-icon" />
+          <span className="rating-score">{product.Rating}</span>
+          <span className="review-count">{product.ReviewCount} 評論</span>
         </div>
-        <div className="GDAButton">
-          <button className="GDAAddLike" onClick={handleToggleTrack}>
-            {isTracking === true ? "取消關注" : "加入關注"}
+
+        <div className="GDABPriceBlock">
+          <span className="GDABOriginalPrice">
+            NT$ {product.OriginalPrice}
+          </span>
+          <span className="GDABPrice">NT$ {product.Price}</span>
+        </div>
+
+        <div className="GDABButtons">
+          <button
+            className={`GDABTrackBtn ${isTracking ? "active" : ""}`}
+            onClick={toggleTrack}>
+            {isTracking ? "已追蹤" : "加入追蹤"}
           </button>
           <button
-            className="GDAAddLike"
-            onClick={() => setShowModal(true)}>
-            查看價格走勢
+            className="GDABCompareBtn"
+            onClick={() => setShowHistory(true)}>
+            歷史價格 / 比價
           </button>
-          {/* 彈出視窗 */}
-          <GDHistoryCompare
-            pId={pId}
-            brand={productData.brand}
-            productName={productData.pName}
-            isOpen={showModal}
-            onClose={() => setShowModal(false)}
-          />
+        </div>
+
+        {/* 歷史價格 Modal */}
+        <GDHistoryCompare
+          pId={pId}
+          productName={product.Name}
+          brand={product.Brand}
+          isOpen={showHistory}
+          onClose={() => setShowHistory(false)}
+        />
+
+        <div className="GDABExtraInfo">
+          <p>運費：滿 $1000 免運</p>
+          <p>付款方式：信用卡、貨到付款</p>
         </div>
       </div>
     </div>

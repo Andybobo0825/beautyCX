@@ -1,0 +1,68 @@
+{
+  "source": "DB20251219_backup",
+  "sourceType": "Microsoft SQL Server backup (.bak)",
+  "output": "data/beautycx.sqlite",
+  "counts": {
+    "Client": 7,
+    "Product": 42,
+    "Price_Now": 126,
+    "Price_History": 509,
+    "Client_Favorites": 10,
+    "Good_Review": 24,
+    "Product_Picture": 48
+  },
+  "check": {
+    "Client": 7,
+    "Product": 42,
+    "Price_Now": 126,
+    "Price_History": 509,
+    "Client_Favorites": 10,
+    "Good_Review": 24,
+    "Product_Picture": 48
+  },
+  "blobBytes": 10317908,
+  "sampleProducts": [
+    {
+      "pId": "P1",
+      "pName": "絲柔輕霧口紅 02初戀暖粉",
+      "brand": "ZA",
+      "category": "化妝品_唇部彩妝_唇膏"
+    },
+    {
+      "pId": "P10",
+      "pName": "六色眼影盤 - 燕麥 9g",
+      "brand": "HEME",
+      "category": "化妝品_眼眉彩妝_眼影"
+    },
+    {
+      "pId": "P11",
+      "pName": "收藏家限量眼彩盤9.45g 哥德綠",
+      "brand": "1028",
+      "category": "化妝品_眼眉彩妝_眼影"
+    },
+    {
+      "pId": "P12",
+      "pName": "柔霧拿鐵眼彩蜜 EX-5",
+      "brand": "KATE 凱婷",
+      "category": "化妝品_眼眉彩妝_眼影"
+    },
+    {
+      "pId": "P13",
+      "pName": "邃影光綻眼影盒 OR-1",
+      "brand": "KATE 凱婷",
+      "category": "化妝品_眼眉彩妝_眼影"
+    }
+  ],
+  "sanitized": {
+    "Client": [
+      "cName",
+      "account",
+      "password",
+      "email",
+      "phone",
+      "sex",
+      "birthday"
+    ],
+    "note": "作品集展示版已匿名化 Client 個資欄位；原始備份檔不應提交版本控制。"
+  }
+}

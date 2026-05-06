@@ -1,134 +1,98 @@
-/* test.css */
-
-/* 外層容器，確保垂直水平居中 */
-.TestLogin-wrapper {
+.LoginBody{
     display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 80vh;
-}
-
-/* 主體卡片：左右分割 */
-.TestLogin-card {
-    display: flex;
-    width: 850px; /* 固定寬度讓結構穩定 */
-    background: #ffffff;
-    border-radius: 30px;
-    overflow: hidden; /* 確保圖片圓角 */
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
-}
-
-/* 左側圖片區域 */
-.TestLogin-image-side {
-    flex: 1.2; /* 圖片佔比稍微大一點 */
-    background-color: #f8f9fa;
-    position: relative;
-}
-
-.TestLogin-image-side img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* 關鍵：確保圖片填滿且不變形 */
-    display: block;
-}
-
-/* 右側表單區域 */
-.TestLogin-form-side {
-    flex: 1;
-    padding: 60px 50px;
-    display: flex;
+    margin: 4vh 15vw 0 15vw;
     flex-direction: column;
-    justify-content: center;
+    
 }
 
-.TestLogin-title {
-    font-size: 24px;
-    font-weight: 300;
-    color: #444;
-    margin-bottom: 35px;
-    letter-spacing: 5px;
+.LBInputArea{
+    width: 100%;
+    border: 0.15vw #FF9191 solid;
+    border-radius: 0.5vw;
+    padding: 2vw 2.2vw 2vw 3vw;
+}
+
+.LBTitle{
+    margin: 0 auto;
+    font-weight: bold;
+    font-size: 1.25vw;
+    line-height: 1.25vw;
+    margin-bottom: 1vw;
+}
+
+.LBIArow{
+    display: flex;
+    margin-top: 1vw;
+    align-items: center;  /* 垂直置中 */
+}
+
+.LBIATitle{
+    width: 10%;
+    font-size: 1.25vw;
+    line-height: 1.25vw;
+    font-weight: bold;
     text-align: center;
 }
 
-.TestLogin-form-group {
-    margin-bottom: 20px;
+.LBIAtext{
+    width: 90%;
+    padding-right: 2.5vw;
 }
 
-.TestLogin-label {
-    display: block;
-    font-size: 12px;
-    color: #bbb;
-    margin-bottom: 8px;
-    letter-spacing: 1px;
-}
-
-.TestLogin-input {
+.LBIAtext input{
     width: 100%;
-    padding: 12px 15px;
+    border-radius: 0.5vw;
+    width: 100%;
+    font-size: 1.25vw;
+    line-height: 1.25vw;    
+    height: 2.5vw;
+    font-weight: bold;
+    margin: 0 auto;
     border: none;
-    border-radius: 10px;
-    background-color: #f3f3f3;
-    transition: all 0.3s ease;
-    outline: none;
-    box-sizing: border-box;
+    color: #A09E9E;
+    padding: 1vw 1.3vw;
+    border: #ED8A8A 0.15vw solid;
 }
 
-.TestLogin-input:focus {
-    background-color: #fff;
-    box-shadow: 0 0 0 2px rgba(237, 138, 138, 0.2);
+.LBIAtext input:focus{
+    border: #ED8A8A 0.15vw solid;
 }
 
-.TestLogin-error {
-    font-size: 11px;
-    color: #ED8A8A;
-    margin-top: 5px;
-}
-
-.TestLogin-actions {
-    margin-top: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.TestLogin-btn-submit {
-    padding: 14px;
+.LBIAConfirmButtom{
+    padding: 0.8vw 1.3vw;
+    /* background-color: #ED8A8A; */
     border: none;
-    border-radius: 10px;
-    background: #ED8A8A;
+    /* color: white; */
+    font-weight: bold;
+    font-size: 1.25vw;
+    line-height: 1.25vw;
+    border-radius: 0.5vw;
+    margin-top: 2.5vw;
+    margin-left: auto;
+    transition: color 0.2s ease-in-out; 
+}
+
+.LBIAforColorConfirmButtom{
     color: white;
-    font-size: 15px;
-    font-weight: 500;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: background 0.3s;
 }
 
-.TestLogin-btn-submit:hover {
-    background: #d17a7a;
+.LBIAforColorRegisterButtom{
+    color: rgb(84, 49, 49)
 }
 
-.TestLogin-btn-link {
-    background: none;
-    border: none;
-    color: #aaa;
-    font-size: 13px;
-    cursor: pointer;
-    text-decoration: none;
-    text-align: center;
+.LBIAforColorConfirmButtom:hover{
+    color: rgb(84, 49, 49);
 }
 
-.TestLogin-btn-link:hover {
-    color: #ED8A8A;
+.LBIAforColorRegisterButtom:hover{
+    color: white
 }
 
-/* 手機版適應：圖片隱藏或排到上方 */
-@media (max-width: 768px) {
-    .TestLogin-card {
-        flex-direction: column;
-        width: 90%;
-    }
-    .TestLogin-image-side {
-        height: 200px;
-    }
+.LBInputArea p{
+    color: rgb(212, 71, 83);
+    text-align: right;
+    margin: 0.35vw 0 0 0;
+    font-size: 1.00vw;
+    line-height: 1.25vw;
+    font-weight: bold;
 }

@@ -27,3 +27,17 @@ export const getProductAllPic = async (pId) => {
         return [];
     }
 }
+/**批次取得商品主圖；保留既有 API 呼叫方式，只補齊前端目前引用的 helper。 */
+export const getBatchProductPics = async (pIds = []) => {
+    const entries = await Promise.all(
+        pIds.map(async (pId) => {
+            try {
+                const url = await getProductPic(pId);
+                return [pId, url || ""];
+            } catch (error) {
+                return [pId, ""];
+            }
+        })
+    );
+    return Object.fromEntries(entries);
+}

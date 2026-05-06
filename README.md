@@ -248,53 +248,45 @@ AWS 與 CDN 架構圖放在 `DOCUMENT/`：
 
 ![CDN 架構](./DOCUMENT/CDN架構.png)
 
-## Terraform 流程
+## Docker / SQLite / GitHub Actions 流程
 
-我另外補了一套對應目前雲架構的 Terraform 樣板，放在 `infra/terraform/`，涵蓋：
+目前作品集部署版已移除 AWS CodePipeline / CodeBuild / Terraform pipeline，改由 GitHub Actions 負責 CI/CD。
 
-- `VPC / Public Subnet / Private Subnet`
-- `EC2`
-- `RDS SQL Server`
-- `ElastiCache Redis`
-- `S3 + CloudFront`
-- `API Gateway + Lambda + SES`
+保留原專案架構：
 
-快速使用方式：
+- 前端仍是 `Client/` React。
+- 後端仍是 `serverclient/` Python Flask + SQLAlchemy。
+- 不因部署需求改寫既有程式語言。
+- 作品集展示資料使用 `data/beautycx.sqlite`，透過 `DATABASE_PATH` 啟用。
+
+本機 Docker Compose：
 
 ```bash
-cd infra/terraform
-cp terraform.tfvars.example terraform.tfvars
-terraform init
-terraform plan
+docker compose config --quiet
+docker compose up --build
 ```
 
-敏感資訊像 `aws_access_key_id`、`aws_secret_access_key` 與資料庫帳密都保留空白，需自行填入 `terraform.tfvars` 或改用環境變數。
+服務：
 
-## CI/CD 流程
+- 前端：`http://localhost:3000`
+- 後端：`http://localhost:5001`
+- Redis：`localhost:6379`
 
-我另外補了第一版 CI/CD，核心策略是：
+GitHub Actions：
 
-- 後端先 Docker 化，由 GitHub Actions 建 image
-- 前端先產生 `build artifact`
-- 正式部署先放在單台 `EC2`
-- EC2 上以 `docker compose` 跑後端 container 與 nginx
+- `.github/workflows/ci.yml`：PR / push 時建置前端、建置後端 Docker image、驗證 compose。
+- `.github/workflows/deploy.yml`：push `main` 時建置前後端 image 並推到 GHCR；若已設定 EC2 secrets，會用 SSH 在 EC2 上執行 Docker Compose 部署。
 
 對應檔案：
 
-- `.github/workflows/ci.yml`
-- `.github/workflows/deploy.yml`
+- `compose.yaml`
+- `Client/Dockerfile`
+- `Client/nginx.conf`
 - `serverclient/Dockerfile`
 - `deploy/docker-compose.prod.yml`
-- `deploy/nginx/default.conf`
 - `deploy/README.md`
 
-其中 deploy workflow 會做三件事：
-
-1. build React 前端靜態檔
-2. build 並 push 後端 Docker image 到 `GHCR`
-3. 透過 SSH 把前端 artifact 與 compose 設定送到 EC2，再執行 `docker compose up -d`
-
-EC2 端不需要先上 ECS，現階段只要有 Docker 與 Docker Compose plugin 即可。GitHub Secrets 清單整理在 `deploy/README.md`。
+EC2 端不需要 ECS 或 AWS CodePipeline；現階段只要 Docker 與 Docker Compose plugin。GitHub Secrets 清單整理在 `deploy/README.md`。
 
 ## 如何啟動專案
 
@@ -320,17 +312,25 @@ npm start
 
 ### 需要的環境設定
 
-建議以環境變數管理下列設定：
+作品集 SQLite / Docker 展示版建議設定：
+
+- `DATABASE_PATH=data/beautycx.sqlite`：啟用 SQLite snapshot。
+- `SECRET_KEY`
+- `REDIS_HOST`
+- `REDIS_PORT`
+- `REDIS_DB`
+
+若要切回原本 MSSQL / RDS 連線，則使用：
 
 - `DB_USERNAME`
 - `DB_PASSWORD`
 - `DB_SERVER`
 - `DB_PORT`
 - `DB_NAME`
-- `JWT_SECRET_KEY`
-- `JWT_REFRESH_SECRET_KEY`
-- `REDIS_HOST`
-- `REDIS_PORT`
+- `DB_DRIVER`
+
+原專案圖片服務仍保留 S3 / CloudFront 設定：
+
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 - `AWS_REGION`

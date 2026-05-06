@@ -357,33 +357,3 @@ li button:hover {
   background-color: #ffe6f0 !important; 
   font-weight: bold;
 }
-
-/* 跑馬燈外框：限制範圍、隱藏超出部分 */
-.MarqueeContainer {
-    width: 100%;
-    background-color: #ffffff; /* 淺粉紅底色 */
-    border: #ff8888 0.05vw solid; /* 深粉紅邊框 */
-    color: #f35757;            /* 深粉紅文字 */
-    overflow: hidden;          /* 隱藏超出的文字 */
-    white-space: nowrap;       /* 強制文字不換行 */
-    padding: 0.5vw 0;          /* 上下留點間距，配合您的 vw 單位習慣 */
-    font-weight: bold;
-    font-size: 1.2vw;          /* 字體大小，可自行調整 */
-}
-
-/* 跑馬燈文字本體：設定動畫 */
-.MarqueeText {
-    display: inline-block;
-    padding-left: 100%;        /* 讓文字一開始位於畫面最右側外 */
-    animation: marquee-scroll 15s linear infinite; /* 15秒跑完一次，無限循環 */
-}
-
-/* 定義動畫軌跡 */
-@keyframes marquee-scroll {
-    0% {
-        transform: translate(0, 0);
-    }
-    100% {
-        transform: translate(-100%, 0); /* 往左移動直到文字完全消失 */
-    }
-}

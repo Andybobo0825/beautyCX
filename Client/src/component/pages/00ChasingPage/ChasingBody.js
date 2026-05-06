@@ -1,32 +1,38 @@
-import styles from "./css/ChasingPage.module.css";
+import "./css/ChasingPage.css";
 import { NavLink, useNavigate } from "react-router-dom";
-import ex1 from './pic/ex1.png';
-import { useEffect, useCallback, useState, useContext } from "react";
+import ex1 from './pic/ex1.png'; // 根據你的位置調整路徑
+import { useEffect, useCallback, useState } from "react";
 import axios from "axios";
 import { getProductPic } from "../../util/util";
-import { MaskContext } from "../../../ContextAPI";
 
 const ChasingBody = () => {
+
     const navigate = useNavigate();
-    const { setMask } = useContext(MaskContext);
     const [trackList, setTrackList] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
+    // 獲取追蹤列表的邏輯 (不變)
     const fetchTrackList = useCallback(async () => {
         const token = localStorage.getItem('accessToken');
         const url = `${process.env.REACT_APP_API_URL}/clientPage/trackList`;
 
         if (!token) {
+            alert("請先登入以查看追蹤商品。");
             navigate('/LoginPage');
+            setLoading(false);
             return;
         }
 
-        setMask(true);
         setLoading(true);
+        setError(null);
         try {
             const response = await axios.get(url, {
-                headers: { "Authorization": `Bearer ${token}` }
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
             });
+            console.log(response.data.results);
 
             if (response?.data?.results?.length > 0) {
                 const formatted = await Promise.all(
@@ -35,97 +41,130 @@ const ChasingBody = () => {
                         image: await getProductPic(item.pId)
                     }))
                 );
+
                 setTrackList(formatted);
-            } else {
-                setTrackList([]);
             }
         } catch (error) {
             console.error("取得追蹤商品列表失敗:", error);
-            if (error.response?.status === 401) {
-                localStorage.removeItem('accessToken');
-                navigate('/LoginPage');
+            setError("無法載入追蹤商品列表，請稍後再試。");
+
+            if (error.response) {
+                if (error.response.status === 401) {
+                    alert("您的登入已過期，請重新登入。");
+                    localStorage.removeItem('accessToken');
+                    navigate('/LoginPage');
+                } else if (error.response.data && error.response.data.error) {
+                    alert(`取得追蹤商品列表失敗: ${error.response.data.error}`);
+                } else {
+                    alert(`取得追蹤商品列表失敗: ${error.response.status} - ${error.response.statusText}`);
+                }
+            } else if (error.request) {
+                alert("網路錯誤，請檢查您的連線。");
+            } else {
+                alert(`請求設定錯誤或未知錯誤: ${error.message}`);
             }
         } finally {
             setLoading(false);
-            setMask(false);
         }
-    }, [navigate, setMask]);
+    }, [navigate]);
 
     useEffect(() => {
         fetchTrackList();
     }, [fetchTrackList]);
 
+
+    // handleToggleTrack - 用於切換 (新增/取消) 追蹤狀態
+    // 這個函式會呼叫您提供的 POST /clientPage/track API
     const handleToggleTrack = async (pId) => {
         const token = localStorage.getItem('accessToken');
-        if (!token) { navigate('/LoginPage'); return; }
+        if (!token) {
+            alert("請先登入以操作追蹤狀態。");
+            navigate('/LoginPage');
+            return;
+        }
 
-        setMask(true);
+        const toggleUrl = `${process.env.REACT_APP_API_URL}/clientPage/track`; // 呼叫 POST /clientPage/track
+
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/clientPage/track`,
-                { pId: pId },
-                {
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                });
+            const response = await axios.post(toggleUrl, { pId: pId }, { // 傳遞 pId 在請求體中
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
 
+            // 根據後端返回的 message 或 status 判斷是新增還是取消
             alert(`${response.data.message || '操作成功'}`);
+            console.log("追蹤狀態切換成功響應:", response.data);
+
+            // 操作成功後，重新獲取列表，更新 UI
             fetchTrackList();
+
         } catch (error) {
-            alert(`操作失敗: ${error.response?.data?.message || error.message}`);
-        } finally {
-            setMask(false);
+            console.error("追蹤狀態切換失敗:", error);
+            alert(`追蹤狀態切換失敗: ${error.response?.data?.message || error.response?.data?.error || error.message}`);
+            if (error.response && error.response.status === 401) {
+                localStorage.removeItem('accessToken');
+                navigate('/LoginPage');
+            }
         }
     };
 
+
+    if (loading) {
+        return (
+            <div className="ChasingBody">
+                <div className="loading-message">載入中，請稍候...</div>
+            </div>
+        );
+    }
+
     return (
-        <div className={styles.ChasingBody}>
-            <div className={styles.SettingNav}>
+        <div className="ChasingBody">
+            <div style={{ display: "flex", gap: "0.5vw" }}>
                 <NavLink to="/SettingPage">
-                    <button className={styles.SBIASettingButtom}>個人設定</button>
+                    <button className="CBIASettingButtom">設定</button>
                 </NavLink>
                 <NavLink to="/ChasingPage">
-                    <button className={styles.SBIAFollowButtom}>追蹤商品</button>
+                    <button className="CBIAFollowButtom">追蹤商品</button>
                 </NavLink>
             </div>
 
-            <hr className={styles["Chr-line"]} />
+            <hr className="Chr-line" />
 
-            {!loading && (
-                trackList.length > 0 ? (
-                    trackList.map((product) => (
-                        <div className={styles.CBInputArea} key={product.pId}>
-                            <NavLink to={`/GoodsDetailPage?pId=${product.pId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                <div className={styles["product-card"]} >
+            {trackList.length > 0 ? (
+                trackList.map((product) => (
+                    // 將整個 CBInputArea 和其內容放在 map 內部
+                    // 注意：這裡的 key 應該放在最外層的重複元素上，所以放在 CBInputArea 上
+                    <div className="CBInputArea" key={product.pId}>
+                        <div className="product-card">
+                            {/* 商品圖片 */}
+                            <img src={product.image || ex1} alt={product.pName} className="product-image" />
 
-                                    <img src={product.image || ex1} alt={product.pName} className={styles["product-image"]} />
-
-                                    <div className={styles["product-info"]}>
-                                        <div className={styles["product-brand"]}>{product.brand}</div>
-                                        <div className={styles["product-name"]}>{product.pName}</div>
-                                        <div className={styles["product-price"]}>
-                                            <span className={styles["current-price"]}>目前價格: ${product.price_min ? product.price_min.toFixed(2) : 'N/A'}</span>
-                                        </div>
-                                        <div className={styles["product-rating"]}>⭐{product.review}</div>
-                                    </div>
-
+                            {/* 商品資訊區塊 */}
+                            <div className="product-info">
+                                <div className="product-brand">{product.brand}</div>
+                                <div className="product-name">{product.pName}</div>
+                                <div className="product-price">
+                                    <span className="current-price">目前價格: ${product.price_min ? product.price_min.toFixed(2) : 'N/A'}</span>
                                 </div>
-                            </NavLink>
+                                <div className="product-rating">⭐{product.review}</div>
+                            </div>
+
                             <button
-                                className={styles.CBIAUnfollowButtom}
+                                className="CBIAUnfollowButtom"
                                 onClick={() => handleToggleTrack(product.pId)}
                             >
                                 取消追蹤
                             </button>
-
                         </div>
-                    ))
-                ) : (
-                    <div className={styles.CBInputArea}>
-                        <div className={styles["no-tracking-data"]}>目前沒有追蹤任何商品。</div>
                     </div>
-                )
+                ))
+            ) : (
+                // 如果沒有追蹤商品，仍然顯示這個訊息在一個 CBInputArea 內 (非重複)
+                <div className="CBInputArea">
+                    <div className="no-tracking-data">目前沒有追蹤任何商品。</div>
+                </div>
             )}
         </div>
     );

@@ -1,0 +1,149 @@
+/* ChasingPage.module.css */
+
+.ChasingBody {
+    display: flex;
+    margin: 4vh 15vw 0 15vw;
+    flex-direction: column;
+}
+
+/* --- 頂部導覽選單 (Tab) 區 --- */
+.SettingNav {
+    display: flex;
+    gap: 1vw;
+    margin-bottom: 0.5vw;
+}
+
+
+
+/* 個人設定 Tab (在此頁面為未選中狀態) */
+.SBIASettingButtom {
+    background: white;
+    border: 1px solid #ED8A8A;
+    color: #ED8A8A;
+    border-radius: 0.5vw;
+    font-size: 1.1vw;
+    padding: 0.6vw 1.8vw;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.SBIASettingButtom:hover {
+    background: #ED8A8A;
+    border-radius: 0.5vw;
+    color: white;
+    border-color: #efabab;
+}
+
+/* 追蹤清單 Tab (在此頁面為選中狀態) */
+.SBIAFollowButtom {
+    background: #ED8A8A;
+    color: white;
+    border-radius: 0.5vw;
+    font-size: 1.1vw;
+    padding: 0.6vw 1.8vw;
+    border: none;
+    cursor: pointer;
+}
+
+.SBIAFollowButtom:hover {
+    background: #e88282;
+    border-radius: 0.5vw;
+    color: rgb(255, 255, 255);
+}
+
+/* 分隔線 */
+.Chr-line {
+    all: unset;
+    display: block;
+    height: 1.5px;
+    background-color: #ED8A8A;
+    margin: 5px 0 20px 0;
+    width: 100%;
+    opacity: 0.5;
+}
+
+/* --- 下方商品陳列區 --- */
+.CBInputArea {
+    position: relative;
+    width: 100%;
+    border: 0.15vw #FF9191 solid;
+    padding: 1vw;
+    height: auto;
+    overflow: hidden;
+    box-sizing: border-box;
+    border-radius: 0.5vw;
+    margin-top: 2vw;
+    background-color: #fff;
+}
+
+.product-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1.5vw;
+}
+
+.product-image {
+    width: 8vw;
+    height: 8vw;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: #fff;
+}
+
+.product-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.3vw;
+}
+
+.product-brand {
+    font-size: 1vw;
+    color: #555;
+}
+
+.product-name {
+    font-weight: bold;
+    font-size: 1.5vw;
+    color: #000;
+}
+
+.product-price {
+    font-size: 1.3vw;
+}
+
+.product-rating {
+    font-size: 1.1vw;
+    color: #fbc12dcf;
+}
+
+/* 取消追蹤按鈕 */
+.CBIAUnfollowButtom {
+    position: absolute;
+    right: 1vw;
+    bottom: 1vw;
+    height: 2.5vw;
+    line-height: 2.5vw;
+    padding: 0 1.3vw;
+    background-color: #ED8A8A;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-size: 1.25vw;
+    border-radius: 0.5vw;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.CBIAUnfollowButtom:hover {
+    background-color: #d17a7a;
+    color: #fff;
+}
+
+.no-tracking-data {
+    text-align: center;
+    font-size: 1.25vw;
+    color: #999;
+    padding: 2vw;
+}

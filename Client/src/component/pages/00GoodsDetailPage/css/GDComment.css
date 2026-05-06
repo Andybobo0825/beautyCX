@@ -1,42 +1,42 @@
-/* GDComment.css */
-
 .GDComment {
     display: flex;
     margin: 4vh 15vw 0 15vw;
     flex-direction: column;
+    /*border: 2px solid black;*/
 }
 
 .GDCommentTitle {
-    font-size: 1.5vw;
+    font-size: 1.25vw;
     margin-left: 5vw;
-    margin-bottom: 5vh;
+    margin-bottom: 2vh;
     font-weight: bold;
 }
 
+
 .GDCommentTable {
     border-collapse: collapse;
-    width: 100%;
 }
 
 .GDCommentTable th {
-    width: 100%;
+    width: 69vw;
+    height: auto;
     background-color: #ED8A8A;
     font-size: 1.25vw;
     color: #ffffff;
     padding: 0.8vw 1.3vw;
     border-top-left-radius: 1vw;
     border-top-right-radius: 1vw;
-    box-sizing: border-box;
 }
 
 .GDCommentTable td {
+    border: 1vw #ED8A8A;
     background-color: #ffffff;
     padding: 0.8vw 1.3vw;
 }
 
-.GDCommentBody > tr {
+.GDCommentBody>tr {
     border-style: inset;
-    border-bottom: 0.3vh solid #ED8A8A;
+    border-bottom: 0.3vh  solid #ED8A8A;
     border-right: 0.3vh solid #ED8A8A;
     border-left: 0.3vh solid #ED8A8A;
 }
@@ -44,7 +44,6 @@
 .GDCommentth {
     display: flex;
     flex-direction: row;
-    align-items: center;
 }
 
 .star {
@@ -58,79 +57,49 @@
     margin-right: 2vw;
 }
 
-.GDCommentFilterBotton button {
+.GDCommentFilterBotton button{
     padding: 0.8vw 1.3vw;
     background-color: white;
     border: none;
     color: #ED8A8A;
     font-weight: bold;
-    font-size: 1.2vw;
+    font-size: 1.25vw;
+    line-height: 1.25vw;
     border-radius: 0.5vw;
+    margin-top: 0.5vw;
     margin-right: 1vw;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
+    transition: color 0.2s ease-in-out;
 }
 
-.GDCommentFilterBotton button:hover,
-.GDCommentFilterBotton button.active {
-    background-color: #f78e8e;
-    color: white;
+.GDCommentFilterBotton button:hover {
+    color: rgb(84, 49, 49);
 }
 
-/* --- 重點修改區：評論用戶佈局 --- */
 .GDCommentUser {
     display: flex;
     flex-direction: row;
     margin-top: 1vw;
-    align-items: flex-start; /* 靠上對齊 */
 }
 
 .GDCommentUser img {
-    margin: 1vw !important; /* 縮小邊距 */
-    flex-shrink: 0;
+    margin: 2vw;
 }
 
 .GDCommentUserInfo {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1; /* 讓文字區塊佔滿剩餘寬度 */
+    align-items: center;
     margin-bottom: 0.35vw;
-    padding-top: 1vw;
-}
-
-.GDCommentUserName {
-    font-weight: bold;
-    font-size: 1.1vw;
-    margin-bottom: 0.2vw;
 }
 
 .GDCommentUserRate {
     display: flex;
-    align-items: center;
-    margin-bottom: 0.5vw;
 }
 
 .GDCommentUserRScore {
     font-size: 1vw;
-    margin-left: 0.5vw;
-    color: #fbc02d;
+    margin-bottom: 0.5vw;
+    color: #fbc02d ;
 }
 
-/* 讓內文完全展開 */
-.GDCommentUserComment {
-    font-size: 1.1vw;
-    line-height: 1.6;
-    color: #444;
-    width: 100%;
-    word-break: break-all;
-    margin-bottom: 1vw;
-}
-
-/* 時間置於底部並靠右 */
 .GDCommentUserCommentTime {
-    align-self: flex-end; /* 靠右 */
-    margin-top: auto;
-    font-size: 0.9vw;
-    color: #888;
-    white-space: nowrap; /* 強制不換行 */
+    margin-left: 40vw;
 }

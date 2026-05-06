@@ -1,0 +1,15 @@
+.git/
+.github/
+.omx/
+.tmp/
+.git.broken-backup-*/
+**/__pycache__/
+**/*.py[cod]
+**/node_modules/
+Client/build/
+.env
+.env.*
+DB20251219_backup
+*.bak
+*.log
+infra/
